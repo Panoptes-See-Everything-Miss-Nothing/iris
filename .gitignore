@@ -1,0 +1,7 @@
+.python-version
+.venv/
+.vscode/
+.pyc
+.cpython
+__pycache__/
+*.py[cod]
