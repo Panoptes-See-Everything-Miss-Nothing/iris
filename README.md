@@ -9,7 +9,11 @@ Pulls data from various to write into JSON file
     sudo apt update
     sudo apt install python3.13 python3.13-venv
     ```
-3. Install direnv
+3. Create virtualenv using
+    ```bash
+    python3.13 -m venv .venv
+    ```
+4. Install direnv
     ```bash
     sudo apt install direnv
     ```
