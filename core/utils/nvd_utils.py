@@ -33,3 +33,18 @@ def create_version_dictionary(data):
         "exploitabilityScore": exploitabilityScore,
         "impactScoredata": impactScoredata,
     }
+
+
+def get_cpe_data(configurations):
+    for node in configurations:
+        temp_dict = dict()
+        for _ in node.get("nodes"):
+            temp_dict["operator"] = _["operator"]
+            temp_dict["negate"] = _["negate"]
+            for cpe in _.get("cpeMatch"):
+                print(f"criteria:{cpe['criteria']}  vulnerable:{cpe['vulnerable']}")
+                print("Including", cpe.get("versionEndIncluding"))
+                # versionStartIncluding
+                # versionEndExcluding
+                # versionEndIncluding
+            print(temp_dict)
