@@ -1,3 +1,6 @@
+import re
+
+
 def create_version_dictionary(data):
     source = data.get("source")
 
@@ -41,10 +44,46 @@ def get_cpe_data(configurations):
         for _ in node.get("nodes"):
             temp_dict["operator"] = _["operator"]
             temp_dict["negate"] = _["negate"]
+            cpe_list = []
+            print("CPEMATCH", _.get("cpeMatch"))
             for cpe in _.get("cpeMatch"):
-                print(f"criteria:{cpe['criteria']}  vulnerable:{cpe['vulnerable']}")
-                print("Including", cpe.get("versionEndIncluding"))
-                # versionStartIncluding
-                # versionEndExcluding
-                # versionEndIncluding
+                if cpe.get("vulnerable"):
+                    criteria = cpe.get("criteria")
+                    # print(f"criteria: {cpe}")
+
+                    cpe_dict = {
+                        "including_version_start": cpe.get("versionStartIncluding"),
+                        "excluding_version_end": cpe.get("versionEndExcluding"),
+                        "including_version_end": cpe.get("versionEndIncluding"),
+                    }
+                    cpe_dict.update(parse_fixed_version(criteria))
+                    cpe_list.append(cpe_dict)
+
+            if cpe_list:
+                temp_dict = {
+                    "operator": _["operator"],
+                    "negate": _["negate"],
+                    "cpe": cpe_list,
+                }
             print(temp_dict)
+
+
+def parse_fixed_version(criteria) -> dict:
+    # if versionStartIncluding, versionEndExcluding, versionEndIncluding are not present,
+    # package has fixed version in criteria
+    fixed_version = None
+    criteria = re.sub("^cpe:\\d+.\\d+:|(:\\*)+", "", criteria)
+    if version := re.search(r"\d+(?:\.\d+)*(?=:)", criteria):
+        fixed_version = version.group()
+
+    criteria_list = criteria.split(":")
+    product_type = criteria_list[0]
+    vendor = criteria_list[1]
+    product = criteria_list[2]
+
+    return {
+        "fixed_version": fixed_version,
+        "product_type": product_type,
+        "vendor": vendor,
+        "product": product,
+    }
