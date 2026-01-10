@@ -77,13 +77,13 @@ def parse_fixed_version(criteria) -> dict:
         fixed_version = version.group()
 
     criteria_list = criteria.split(":")
-    product_type = criteria_list[0]
+    category = criteria_list[0]
     vendor = criteria_list[1]
     product = criteria_list[2]
 
     return {
         "fixed_version": fixed_version,
-        "product_type": product_type,
+        "category": category,
         "vendor": vendor,
         "product": product,
     }
