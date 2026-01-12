@@ -35,7 +35,7 @@ def parse_data(data) -> list:
         if configurations := cve_obj.get("configurations"):
             if cve != "CVE-2014-0207":
                 continue
-            print("CONFIG", configurations)
+            # print("CONFIG", configurations)
             cpe_data = get_cpe_data(configurations)
             if not cpe_data:
                 print(f"Failed to fetch CPE data for {cve}")
@@ -55,10 +55,13 @@ def parse_data(data) -> list:
                         for obj in cve_obj.get("descriptions")
                         if obj["lang"] == "en"
                     ),
-                    "cpe": cpe_data,
+                    "cpe_nodes": cpe_data,
                 }
             )
             nvd_data.append(cve_object)
+            import pprint
+
+            pprint.pp(cve_object)
         # else:
         #     print(f"No CPE data found for {cve}")
     return nvd_data
