@@ -89,8 +89,8 @@ def parse_fixed_version(criteria) -> dict:
     package = criteria_list[2]
 
     return {
-        "cpe": criteria,
         "fixed_version": fixed_version,
+        "cpe": criteria,
         "category": category,
         "vendor": vendor,
         "package": package,
