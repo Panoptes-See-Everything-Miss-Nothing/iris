@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime
 from sqlalchemy.orm import relationship
 
-from settings import Base
+from .base import Base
 
 
 class CVE(Base):
@@ -12,6 +12,7 @@ class CVE(Base):
     last_modified = Column(DateTime(timezone=True), nullable=True)
     description = Column(String, nullable=True)
     vuln_status = Column(String(70), nullable=True)
+    source = Column(String, nullable=True)
 
     packages = relationship(
         "VulnerablePackage", back_populates="cve", cascade="all, delete-orphan"

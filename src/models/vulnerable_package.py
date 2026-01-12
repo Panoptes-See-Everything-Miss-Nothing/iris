@@ -13,12 +13,20 @@ class VulnerablePackage(Base):
     )
     category = Column(String, nullable=False, index=True)
     package_name = Column(String, nullable=False, index=True)
-    vendor = Column(String, nullable=True)
+    vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True, index=True)
     cpe_string = Column(String, nullable=False)
 
     cve = relationship("CVE", back_populates="packages")
-    ranges = relationship(
-        "VulnerableRange", back_populates="package", cascade="all, delete-orphan"
+    vendor = relationship("Vendor", back_populates="packages")
+
+    versions = relationship(
+        "VulnerableVersion",
+        back_populates="package",
+        cascade="all, delete-orphan",
+        lazy="selectin",  # often better than default lazy loading
     )
 
-    __table_args__ = (Index("idx_ecosystem_package", vendor, package_name),)
+    __table_args__ = (
+        Index("idx_vendor_package", "vendor_id", "package_name"),
+        Index("ix_package_cve", "cve_id"),
+    )
