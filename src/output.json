@@ -1,0 +1,26 @@
+[
+    {
+        "cve": "CVE-2007-1399",
+        "source": "cve@mitre.org",
+        "published_date": "2007-03-10T22:19:00.000",
+        "modified_date": "2025-12-05T18:24:55.387",
+        "status": "Undergoing Analysis",
+        "description": "Stack-based buffer overflow in the zip:// URL wrapper in PECL ZIP 1.8.3 and earlier, as bundled with PHP 5.2.0 and 5.2.1, allows remote attackers to execute arbitrary code via a long zip:// URL, as demonstrated by actively triggering URL access from a remote PHP interpreter via avatar upload or blog pingback.",
+        "version": {
+            "cvssMetricV2": {
+                "source": "nvd@nist.gov",
+                "version": "2.0",
+                "base_score": 10.0,
+                "access_vector": "network",
+                "access_complexity": "low",
+                "authentication": "none",
+                "confidentiality_impact": "complete",
+                "integrity_impact": "complete",
+                "availability_impact": "complete",
+                "base_severity": "high",
+                "exploitabilityScore": 10.0,
+                "impactScoredata": 10.0
+            }
+        }
+    }
+]
