@@ -1,7 +1,7 @@
 from src.utils.nvd_parse import read_from_json, parse_data
 from src.services.cve_importer import save_cves
 
-from src.settings import SessionLocal, FIXTURES_FILE
+from src.settings import FIXTURES_FILE
 
 
 if __name__ == "__main__":
@@ -9,10 +9,13 @@ if __name__ == "__main__":
 
     if data:
         cve_objects = parse_data(data)
+        # print(cve_objects)
         if not cve_objects:
             print(f"Could not parse {FIXTURES_FILE}")
-        with SessionLocal() as db:
-            if save_cves(cve_objects, db):
-                print("Save successful")
+        save_cves(cve_objects)
+        # if save_cves(cve_objects):
+        #     print("Save successful")
+        # else:
+        #     print("Failed to save CVE objects")
     else:
         print("No data present")
