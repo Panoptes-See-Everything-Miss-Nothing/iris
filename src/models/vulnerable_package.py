@@ -19,4 +19,14 @@ class VulnerablePackage(Base):
     cve = relationship("CVE", back_populates="packages")
     vendor = relationship("Vendor", back_populates="packages")
 
-    __table_args__ = (Index("idx_ecosystem_package", vendor_id, package_name),)
+    versions = relationship(
+        "VulnerableVersion",
+        back_populates="package",
+        cascade="all, delete-orphan",
+        lazy="selectin",  # often better than default lazy loading
+    )
+
+    __table_args__ = (
+        Index("idx_vendor_package", "vendor_id", "package_name"),
+        Index("ix_package_cve", "cve_id"),
+    )

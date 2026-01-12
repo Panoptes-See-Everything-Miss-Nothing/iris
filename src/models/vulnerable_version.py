@@ -20,4 +20,4 @@ class VulnerableVersion(Base):
     operator = Column(String(100), nullable=True)
     negate = Column(Boolean, nullable=True)
 
-    package = relationship("VulnerablePackage", back_populates="ranges")
+    package = relationship("VulnerablePackage")
