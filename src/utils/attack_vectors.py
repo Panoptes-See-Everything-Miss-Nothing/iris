@@ -1,204 +1,123 @@
-from enum import Enum
-from typing import Self
+from enum import StrEnum
 
 
-class CVSSSeverity(str, Enum):
-    NONE = "none"
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
-
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
+# this is factory method which returns a method from last return stmt
+def from_raw_factory():
+    def from_raw(cls, raw_value: str | None) -> str | None:
         if not raw_value:
             return None
+        clean = raw_value.lower().strip()
         try:
-            return cls(raw_value.upper())
+            return cls(clean).value
         except ValueError:
-            print(f"Unknown severity value {raw_value}")
+            print(f"Unknown {cls.__name__} value {raw_value}")
             return None
 
-
-class UserInteraction(str, Enum):
-    REQUIRED = "required"
-    NONE = "none"
-    ACTIVE = "active"
-    PASSIVE = "passive"
-
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown User Interaction value {raw_value}")
-            return None
+    return classmethod(from_raw)
 
 
-class AvailabilityImpact(str, Enum):
-    NONE = "none"
-    PARTIAL = "partial"
-    HIGH = "high"
-    LOW = "low"
-    COMPLETE = "complete"
+class BaseSeverity(StrEnum):
+    none = "none"
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Availibility Impact value {raw_value}")
-            return None
+    # classmethod decorator sends class as first param iternally
+    from_raw = from_raw_factory()  # this creats from_raw() for CVSSSeverity class
 
 
-class AttackVector(str, Enum):
-    NETWORK = "network"
-    ADJACENT = "adjacent_network"
-    LOCAL = "local"
-    PHYSICAL = "physical"
+class UserInteraction(StrEnum):
+    required = "required"
+    none = "none"
+    active = "active"
+    passive = "passive"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Availibility Impact value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class PrivilegesRequired(str, Enum):
-    NONE = "none"
-    LOW = "low"
-    HIGH = "high"
+class AvailabilityImpact(StrEnum):
+    none = "none"
+    partial = "partial"
+    high = "high"
+    low = "low"
+    complete = "complete"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Availibility Impact value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class AttackComplexity(str, Enum):
-    HIGH = "high"
-    LOW = "low"
+class AttackVector(StrEnum):
+    network = "network"
+    adjacent_network = "adjacent_network"
+    local = "local"
+    physical = "physical"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Attack complexity value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class IntegrityImpact(str, Enum):
-    NOT_DEFINED = "not_defined"
-    NONE = "none"
-    COMPLETE = "complete"
-    HIGH = "high"
-    LOW = "low"
-    PARTIAL = "partial"
+class PrivilegesRequired(StrEnum):
+    none = "none"
+    low = "low"
+    high = "high"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Integrity Impact value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class ConfedentialityImpact(str, Enum):
-    COMPLETE = "complete"
-    HIGH = "high"
-    NONE = "none"
-    NOT_DEFINED = "not_defined"
-    PARTIAL = "partial"
-    LOW = "low"
+class AttackComplexity(StrEnum):
+    high = "high"
+    low = "low"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Confedentiality Impact value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class Authentication(str, Enum):
-    SINGLE = "single"
-    NONE = ("none",)
-    MULTIPLE = "multiple"
+class IntegrityImpact(StrEnum):
+    not_defined = "not_defined"
+    none = "none"
+    complete = "complete"
+    high = "high"
+    low = "low"
+    partial = "partial"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Authentication value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class Scope(str, Enum):
-    CHANGED = ("changed",)
-    UNCHANGED = "unchanged"
+class ConfedentialityImpact(StrEnum):
+    complete = "complete"
+    high = "high"
+    none = "none"
+    not_defined = "not_defined"
+    partial = "partial"
+    low = "low"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Scope value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class AccessVector(str, Enum):
-    NETWORK = "network"
-    LOCAL = "local"
-    ADJACENT_NETWORK = "adjacent_network"
+class Authentication(StrEnum):
+    single = "single"
+    none = "none"
+    multiple = "multiple"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Access Vector value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
 
 
-class AccessComplexity(str, Enum):
-    LOW = "low"
-    HIGH = "high"
-    MEDIUM = "medium"
+class Scope(StrEnum):
+    changed = "changed"
+    unchanged = "unchanged"
 
-    @classmethod
-    def from_raw(cls, raw_value: str | None) -> Self | None:
-        if not raw_value:
-            return None
-        try:
-            return cls(raw_value.upper())
-        except ValueError:
-            print(f"Unknown Access Complexity value {raw_value}")
-            return None
+    from_raw = from_raw_factory()
+
+
+class AccessVector(StrEnum):
+    network = "network"
+    local = "local"
+    adjacent_network = "adjacent_network"
+
+    from_raw = from_raw_factory()
+
+
+class AccessComplexity(StrEnum):
+    low = "low"
+    high = "high"
+    medium = "medium"
+
+    from_raw = from_raw_factory()

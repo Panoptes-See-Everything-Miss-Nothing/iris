@@ -2,7 +2,7 @@ import re
 from typing import Dict, List
 
 from .attack_vectors import (
-    CVSSSeverity,
+    BaseSeverity,
     UserInteraction,
     AvailabilityImpact,
     AttackVector,
@@ -24,7 +24,9 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
 
     if cvss_data:
         result["base_score"] = cvss_data.get("baseScore")
-        result["base_severity"] = CVSSSeverity.from_raw(cvss_obj.get("baseSeverity"))
+        result["base_severity"] = BaseSeverity.from_raw(
+            cvss_obj.get("baseSeverity")
+        )  # this calls from_raw()
         result["attack_vector"] = AttackVector.from_raw(
             AttackVector.from_raw(cvss_data.get("attackVector"))
         )
