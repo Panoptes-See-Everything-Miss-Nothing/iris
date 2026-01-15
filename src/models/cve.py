@@ -17,3 +17,6 @@ class CVE(Base):
     packages = relationship(
         "VulnerablePackage", back_populates="cve", cascade="all, delete-orphan"
     )
+
+    cvss_v2 = relationship("CVSSv2", back_populates="cve", uselist=False)
+    cvss_v3 = relationship("CVSSv3", back_populates="cve", uselist=False)
