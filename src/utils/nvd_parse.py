@@ -26,19 +26,19 @@ def parse_data(data) -> list:
     nvd_data = []
     for _ in data["vulnerabilities"]:
         cve_obj = _.get("cve")
-        cve = cve_obj.get("id")
-        if not cve:
+        cve_id = cve_obj.get("id")
+        if not cve_id:
             print("CVE not found. Skipping object")
             continue
 
-        cve_object = {"cve": cve}
+        cve_object = {"cve": cve_id}
         if configurations := cve_obj.get("configurations"):
-            if cve != "CVE-2014-0207":
+            if cve_id != "CVE-2014-0207":
                 continue
             # print("CONFIG", configurations)
             cpe_data = get_cpe_data(configurations)
             if not cpe_data:
-                print(f"Failed to fetch CPE data for {cve}")
+                print(f"Failed to fetch CPE data for {cve_id}")
                 continue
             cve_object.update(
                 {
