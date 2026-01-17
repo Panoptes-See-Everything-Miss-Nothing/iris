@@ -19,4 +19,4 @@ class CVE(Base):
     )
 
     cvss_v2 = relationship("CVSSv2", back_populates="cve", uselist=False)
-    cvss_v3 = relationship("CVSSv3", back_populates="cve", uselist=False)
+    cvss_v3 = relationship("CVSSv31", back_populates="cve", uselist=False)

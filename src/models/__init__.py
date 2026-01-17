@@ -3,7 +3,7 @@ from .cve import CVE
 from .vulnerable_package import VulnerablePackage
 from .vulnerable_version import VulnerableVersion
 from .vendor import Vendor
-from .cvss import CVSSv2, CVSSv3
+from .cvss import CVSSv2, CVSSv31
 
 
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "VulnerableVersion",
     "Vendor",
     "CVSSv2",
-    "CVSSv3",
+    "CVSSv31",
 ]

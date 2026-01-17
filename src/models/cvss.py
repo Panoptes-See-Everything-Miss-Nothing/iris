@@ -27,7 +27,6 @@ class CVSSBase(Base):
     )
 
     # Common to both v2 and v3
-    version = Column(String(10), nullable=False)
     base_score = Column(Float, nullable=True)
     base_severity = Column(String(20), nullable=True, index=True)
     vector_string = Column(String(150), nullable=True)
@@ -62,8 +61,8 @@ class CVSSv2(CVSSBase):
     __table_args__ = (UniqueConstraint("cve_id", name="uq_cvss_v2_cve"),)
 
 
-class CVSSv3(CVSSBase):
-    __tablename__ = "cvss_v3"
+class CVSSv31(CVSSBase):
+    __tablename__ = "cvss_v31"
 
     attack_vector = Column(String(30), nullable=True)
     attack_complexity = Column(String(30), nullable=True)
@@ -74,7 +73,7 @@ class CVSSv3(CVSSBase):
     integrity_impact = Column(String(30), nullable=True)
     availability_impact = Column(String(30), nullable=True)
 
-    __table_args__ = (UniqueConstraint("cve_id", name="uq_cvss_v3_cve"),)
+    __table_args__ = (UniqueConstraint("cve_id", name="uq_cvss_v31_cve"),)
 
 
 # TODO CVSS_v30
