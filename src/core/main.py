@@ -7,15 +7,17 @@ from src.settings import FIXTURES_FILE
 if __name__ == "__main__":
     data = read_from_json(FIXTURES_FILE)
 
-    if data:
-        cve_objects = parse_data(data)
-        # print(cve_objects)
-        if not cve_objects:
-            print(f"Could not parse {FIXTURES_FILE}")
-        save_cves(cve_objects)
-        # if save_cves(cve_objects):
-        #     print("Save successful")
-        # else:
-        #     print("Failed to save CVE objects")
+    if not data:
+        pass
+    cve_objects = parse_data(data)
+    # print(cve_objects)
+    if not cve_objects:
+        print("No new CVEs found")
     else:
-        print("No data present")
+        result = save_cves(cve_objects)
+        if result:
+            print("Save successful")
+        elif result is None:
+            print("No data present")
+        else:
+            print("Failed to save CVE objects")
