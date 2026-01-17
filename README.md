@@ -1,4 +1,4 @@
-# Iris
+# Iris - The Messanger
 Pulls data from various to write into JSON file
 
 
@@ -42,3 +42,4 @@ Pulls data from various to write into JSON file
     sudo apt update
     sudo apt install black
     ```
+
