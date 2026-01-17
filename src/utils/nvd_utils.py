@@ -23,30 +23,30 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
     result = {}
 
     if cvss_data:
-        result["base_score"] = cvss_data.get("baseScore")
-        result["base_severity"] = BaseSeverity.from_raw(
+        result["baseScore"] = cvss_data.get("baseScore")
+        result["baseSeverity"] = BaseSeverity.from_raw(
             cvss_obj.get("baseSeverity")
         )  # this calls from_raw()
-        result["attack_vector"] = AttackVector.from_raw(
+        result["attackVector"] = AttackVector.from_raw(
             AttackVector.from_raw(cvss_data.get("attackVector"))
         )
-        result["attack_complexity"] = AttackComplexity.from_raw(
+        result["attackComplexity"] = AttackComplexity.from_raw(
             cvss_data.get("attackComplexity")
         )
-        result["privileges_required"] = PrivilegesRequired.from_raw(
+        result["privilegesRequired"] = PrivilegesRequired.from_raw(
             cvss_obj.get("privilegesRequired")
         )
-        result["user_interaction"] = UserInteraction.from_raw(
+        result["userInteraction"] = UserInteraction.from_raw(
             cvss_data.get("userInteraction")
         )
         result["scope"] = Scope.from_raw(cvss_data.get("scope"))
-        result["confidentiality_impact"] = ConfedentialityImpact.from_raw(
+        result["confidentialityImpact"] = ConfedentialityImpact.from_raw(
             cvss_data.get("confidentialityImpact")
         )
-        result["integrity_impact"] = IntegrityImpact.from_raw(
+        result["integrityImpact"] = IntegrityImpact.from_raw(
             cvss_data.get("integrityImpact")
         )
-        result["availability_impact"] = AvailabilityImpact.from_raw(
+        result["availabilityImpact"] = AvailabilityImpact.from_raw(
             cvss_data.get("availabilityImpact")
         )
         result["authentication"] = Authentication.from_raw(
@@ -56,9 +56,9 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
         result["accessComplexity"] = AccessComplexity.from_raw(
             cvss_data.get("accessComplexity")
         )
-        result["exploitability_score"] = cvss_obj.get("exploitabilityScore")
-        result["impact_score"] = cvss_obj.get("impactScore")
-        result["vector_string"] = cvss_data.get("vectorString")
+        result["exploitabilityScore"] = cvss_obj.get("exploitabilityScore")
+        result["impactScore"] = cvss_obj.get("impactScore")
+        result["vectorString"] = cvss_data.get("vectorString")
 
     return result
 
