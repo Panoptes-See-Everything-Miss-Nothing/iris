@@ -1,6 +1,11 @@
 import json
 
-from src.utils.nvd_utils import get_cpe_data
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+from src.utils.nvd_utils import get_cpe_data, create_version_dictionary
+from src.models.cve import CVE
+from src.settings import SessionLocal
 
 
 def read_from_json(file_path) -> str | None:
@@ -10,6 +15,8 @@ def read_from_json(file_path) -> str | None:
             return data
     except FileNotFoundError:
         print(f"Please check path correctly: {file_path}")
+    except Exception as e:
+        print(f"Could not parse file: {e}")
 
 
 def write_to_json(nvd_data, file_path) -> str | None:
@@ -22,24 +29,57 @@ def write_to_json(nvd_data, file_path) -> str | None:
         print(f"Could not write to {file_path}")
 
 
-def parse_data(data) -> list:
+def get_existing_cve_ids() -> set | None:
+    """
+    Fetch all existing CVE IDs from DB.
+    Returns set of IDs or None on failure.
+    """
+    print("Fetching Existing CVEs")
+    try:
+        with SessionLocal() as db:
+            db.execute(select(1)).scalar()
+
+            # Fetch IDs
+            result = db.execute(select(CVE.cve_id)).all()
+            existing_ids = {row[0] for row in result}
+
+            print(f"Found {len(existing_ids)} existing CVEs in DB")
+            return existing_ids
+
+    except (IntegrityError, SQLAlchemyError) as e:
+        print(f"Database error while fetching existing CVEs: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error during DB check: {e}")
+        return None
+
+
+def parse_data(data) -> list | None:
+    existing_cves = get_existing_cve_ids()
+
+    if existing_cves is None:
+        print("Connot proceed database connection failed")
+        return None
+
     nvd_data = []
     for _ in data["vulnerabilities"]:
         cve_obj = _.get("cve")
-        cve = cve_obj.get("id")
-        if not cve:
+        cve_id = cve_obj.get("id")
+        if not cve_id:
             print("CVE not found. Skipping object")
             continue
 
-        cve_object = {"cve": cve}
+        if cve_id in existing_cves:
+            print(f"{cve_id} already exists, skipping")
+            continue
+
+        cve_object = {"cve": cve_id}
         if configurations := cve_obj.get("configurations"):
-            if cve != "CVE-2014-0207":
-                continue
-            # print("CONFIG", configurations)
             cpe_data = get_cpe_data(configurations)
             if not cpe_data:
-                print(f"Failed to fetch CPE data for {cve}")
+                print(f"Failed to fetch CPE data for {cve_id}")
                 continue
+
             cve_object.update(
                 {
                     "source": cve_obj.get("sourceIdentifier"),
@@ -55,13 +95,21 @@ def parse_data(data) -> list:
                         for obj in cve_obj.get("descriptions")
                         if obj["lang"] == "en"
                     ),
-                    "cpe_nodes": cpe_data,
                 }
             )
-            nvd_data.append(cve_object)
-            import pprint
+            metrics = cve_obj.get("metrics")
+            if metrics:
+                cvss_v2 = metrics.get("cvssMetricV2")
+                if cvss_v2:
+                    cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
 
-            pprint.pp(cve_object)
-        # else:
-        #     print(f"No CPE data found for {cve}")
+                cvss_v3 = metrics.get("cvssMetricV31")
+                if cvss_v3:
+                    cve_object["cvss_v3"] = create_version_dictionary(cvss_v3)
+            nvd_data.append(cve_object)
+
+            # import pprint
+            # pprint.pp(cve_object)
+        else:
+            print(f"No CPE data found for {cve_id}")
     return nvd_data

@@ -1,45 +1,66 @@
 import re
+from typing import Dict, List
+
+from .attack_vectors import (
+    BaseSeverity,
+    UserInteraction,
+    AvailabilityImpact,
+    AttackVector,
+    PrivilegesRequired,
+    AttackComplexity,
+    IntegrityImpact,
+    ConfedentialityImpact,
+    AccessComplexity,
+    Authentication,
+    Scope,
+    AccessVector,
+)
 
 
-# def create_version_dictionary(data):
-# source = data.get("source")
+def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
+    cvss_obj = cvss_obj_list[0]
+    cvss_data = cvss_obj.get("cvssData")
+    result = {}
 
-# cvss_data = data.get("cvssData")
-# version = cvss_data.get("version")
-# base_score = cvss_data.get("baseScore")
-# access_vector = cvss_data.get("accessVector")
-# access_complexity = cvss_data.get("accessComplexity")
-# authentication = cvss_data.get("authentication")
-# confidentiality_impact = cvss_data.get("confidentialityImpact")
-# integrity_impact = cvss_data.get("integrityImpact")
-# availability_impact = cvss_data.get("availabilityImpact")
+    if cvss_data:
+        result["baseScore"] = cvss_data.get("baseScore")
+        result["baseSeverity"] = BaseSeverity.from_raw(
+            cvss_obj.get("baseSeverity")
+        )  # this calls from_raw()
+        result["attackVector"] = AttackVector.from_raw(
+            AttackVector.from_raw(cvss_data.get("attackVector"))
+        )
+        result["attackComplexity"] = AttackComplexity.from_raw(
+            cvss_data.get("attackComplexity")
+        )
+        result["privilegesRequired"] = PrivilegesRequired.from_raw(
+            cvss_obj.get("privilegesRequired")
+        )
+        result["userInteraction"] = UserInteraction.from_raw(
+            cvss_data.get("userInteraction")
+        )
+        result["scope"] = Scope.from_raw(cvss_data.get("scope"))
+        result["confidentialityImpact"] = ConfedentialityImpact.from_raw(
+            cvss_data.get("confidentialityImpact")
+        )
+        result["integrityImpact"] = IntegrityImpact.from_raw(
+            cvss_data.get("integrityImpact")
+        )
+        result["availabilityImpact"] = AvailabilityImpact.from_raw(
+            cvss_data.get("availabilityImpact")
+        )
+        result["authentication"] = Authentication.from_raw(
+            cvss_data.get("authentication")
+        )
+        result["accessVector"] = AccessVector.from_raw(cvss_data.get("accessVector"))
+        result["accessComplexity"] = AccessComplexity.from_raw(
+            cvss_data.get("accessComplexity")
+        )
+        result["exploitabilityScore"] = cvss_obj.get("exploitabilityScore")
+        result["impactScore"] = cvss_obj.get("impactScore")
+        result["vectorString"] = cvss_data.get("vectorString")
 
-# base_severity = data.get("baseSeverity")
-# exploitabilityScore = data.get("exploitabilityScore")
-# impactScoredata = data.get("impactScore")
-
-# return {
-#     "source": source,
-#     "version": version,
-#     "base_score": base_score,
-#     "access_vector": access_vector.lower() if access_vector else None,
-#     "access_complexity": access_complexity.lower() if access_complexity else None,
-#     "authentication": authentication.lower() if authentication else None,
-#     "confidentiality_impact": (
-#         confidentiality_impact.lower() if confidentiality_impact else None
-#     ),
-#     "integrity_impact": integrity_impact.lower() if integrity_impact else None,
-#     "availability_impact": (
-#         availability_impact.lower() if availability_impact else None
-#     ),
-#     "base_severity": base_severity.lower() if base_severity else None,
-#     "exploitabilityScore": exploitabilityScore,
-#     "impactScoredata": impactScoredata,
-# }
-# return {
-#     "source": source,
-#     "base_score": base_score,
-# }
+    return result
 
 
 def get_cpe_data(configurations):
