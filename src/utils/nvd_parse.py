@@ -1,4 +1,5 @@
 import json
+from typing import Dict
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -29,7 +30,7 @@ def write_to_json(nvd_data, file_path) -> str | None:
         print(f"Could not write to {file_path}")
 
 
-def get_existing_cve_ids() -> set | None:
+def get_existing_cve_ids() -> Dict | None:
     """
     Fetch all existing CVE IDs from DB.
     Returns set of IDs or None on failure.
@@ -41,10 +42,11 @@ def get_existing_cve_ids() -> set | None:
 
             # Fetch IDs
             result = db.execute(select(CVE.cve_id)).all()
-            existing_ids = {row[0] for row in result}
+            # dict: cve_id → last_modified (as string or datetime)
+            existing_cves = {row[0]: row[1] for row in result if row[1] is not None}
 
-            print(f"Found {len(existing_ids)} existing CVEs in DB")
-            return existing_ids
+            print(f"Found {len(existing_cves)} existing CVEs in DB")
+            return existing_cves
 
     except (IntegrityError, SQLAlchemyError) as e:
         print(f"Database error while fetching existing CVEs: {e}")
@@ -69,7 +71,19 @@ def parse_data(data) -> list | None:
             print("CVE not found. Skipping object")
             continue
 
-        if cve_id in existing_cves:
+        feed_updated = cve_obj.get("lastModified")
+        stored_modified = existing_cves.get(cve_id)
+        should_process = False
+
+        if stored_modified is None:
+            should_process = True  # New CVE process it
+        else:
+            if feed_updated > stored_modified:
+                should_process = True  # Updated CVE based on data
+            else:
+                should_process = False  # Exists and updated already
+
+        if not should_process:
             print(f"{cve_id} already exists, skipping")
             continue
 
