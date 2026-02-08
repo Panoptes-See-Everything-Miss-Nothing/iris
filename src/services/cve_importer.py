@@ -24,6 +24,14 @@ def get_or_create_vendor(vendor_name: Optional[str], db: Session) -> Optional[Ve
 
 
 def save_cves(cve_objects: List[Dict]) -> bool | None:
+    """
+    Adds new CVE records in DB also updates the existing records
+
+    :param cve_objects: Description
+    :type cve_objects: List[Dict]
+    :return: Description
+    :rtype: bool | None
+    """
     if not cve_objects:
         print("No CVEs to save")
         return True

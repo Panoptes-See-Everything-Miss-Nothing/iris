@@ -10,7 +10,7 @@ if __name__ == "__main__":
     if not data:
         pass
     cve_objects = parse_data(data)
-    # print(cve_objects)
+
     if not cve_objects:
         print("No new CVEs found")
     else:
