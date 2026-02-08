@@ -4,16 +4,22 @@ from typing import Dict
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.utils.nvd_utils import get_cpe_data, create_version_dictionary
+from src.utils.nvd_utils import (
+    get_cpe_data,
+    create_version_dictionary,
+    convert_to_timestamptz,
+)
 from src.models.cve import CVE
 from src.settings import SessionLocal
 
 
 def read_from_json(file_path) -> str | None:
+    print(f"Parsing {file_path}")
     try:
         with open(file_path, "r") as file:
             data = json.load(file)
-            return data
+        print(f"Successfully parsed: {file_path}")
+        return data
     except FileNotFoundError:
         print(f"Please check path correctly: {file_path}")
     except Exception as e:
@@ -41,7 +47,7 @@ def get_existing_cve_ids() -> Dict | None:
             db.execute(select(1)).scalar()
 
             # Fetch IDs
-            result = db.execute(select(CVE.cve_id)).all()
+            result = db.execute(select(CVE.cve_id, CVE.last_modified)).all()
             # dict: cve_id → last_modified (as string or datetime)
             existing_cves = {row[0]: row[1] for row in result if row[1] is not None}
 
@@ -57,10 +63,17 @@ def get_existing_cve_ids() -> Dict | None:
 
 
 def parse_data(data) -> list | None:
+    """
+    Parses the data and check if cve exists, is updated and returns list of objects to be created as well as updated
+
+    :param data: Description
+    :return: Description
+    :rtype: list[Any] | None
+    """
     existing_cves = get_existing_cve_ids()
 
     if existing_cves is None:
-        print("Connot proceed database connection failed")
+        print("Database connection failed")
         return None
 
     nvd_data = []
@@ -78,6 +91,9 @@ def parse_data(data) -> list | None:
         if stored_modified is None:
             should_process = True  # New CVE process it
         else:
+            if not feed_updated:
+                continue
+            feed_updated = convert_to_timestamptz(feed_updated)
             if feed_updated > stored_modified:
                 should_process = True  # Updated CVE based on data
             else:

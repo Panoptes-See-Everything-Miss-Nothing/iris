@@ -1,5 +1,8 @@
+from datetime import datetime
+import pytz
 import re
 from typing import Dict, List
+from xxlimited import Str
 
 from .attack_vectors import (
     BaseSeverity,
@@ -116,3 +119,15 @@ def parse_fixed_version(criteria) -> dict:
         "vendor": vendor,
         "package": package,
     }
+
+
+def convert_to_timestamptz(feed_modified_str: Str) -> datetime | None:
+    try:
+        # Convert NVD ISO string to datetime (handles both with/without Z)
+        feed_modified_dt = datetime.fromisoformat(
+            feed_modified_str.replace("Z", "+00:00")
+        )
+        feed_updated_dt = feed_modified_dt.astimezone(pytz.UTC)
+        return feed_updated_dt
+    except ValueError as e:
+        print(f"Invalid date format for {feed_modified_str}: - {e}")
