@@ -1,4 +1,7 @@
 import json
+from typing import Dict
+from math import ceil
+import requests
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -8,7 +11,7 @@ from src.models.cve import CVE
 from src.settings import SessionLocal
 
 
-def read_from_json(file_path) -> str | None:
+def read_from_json(file_path) -> Dict | None:
     try:
         with open(file_path, "r") as file:
             data = json.load(file)
@@ -17,6 +20,69 @@ def read_from_json(file_path) -> str | None:
         print(f"Please check path correctly: {file_path}")
     except Exception as e:
         print(f"Could not parse file: {e}")
+
+
+def deco_time(func):
+    from datetime import datetime
+
+    def wrapper(*args, **kwargs):
+        start = datetime.now()
+        func(*args, **kwargs)
+        print(f"Total Time taken: {datetime.now()-start}")
+
+    return wrapper
+
+
+# Sequential execution:
+#   Total Records 273042
+#   Total Time taken: 0:47:57.390410
+#   With ~30 pages 429 error code
+
+
+@deco_time
+def read_from_nvd_api(base_url: str) -> Dict | None:
+    print("Reading from API", base_url)
+    start_index = 0
+    page_size = 2000
+    params = {"resultsPerPage": page_size, "startIndex": start_index}
+
+    with requests.Session() as session:
+        try:
+            response = session.get(base_url, params=params)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Intial API call Failed: {e}")
+            return
+
+        data = response.json()
+        vulnerabilities = []
+
+        total_results = data.get("totalResults", 0)
+        print(f"Total Records reported by API: {total_results}")
+
+        if not total_results:
+            return {"vulnerabilities": vulnerabilities}
+
+        vulnerabilities.extend(data.get("vulnerabilities", []))
+
+        page_count = ceil(total_results / page_size)
+        print(f"Total pages {page_count}")
+
+        for page in range(1, page_count):
+            print(f"Fetching from page {page}/{page_count}")
+            params["startIndex"] = page * page_size
+
+            try:
+                response = session.get(base_url, params=params)
+                response.raise_for_status()
+                data = response.json()
+                vulnerabilities.extend(data.get("vulnerabilities", []))
+            except requests.RequestException as e:
+                print(f"Error Occured for page count{page}: {e}")
+                continue
+
+    print(f"Total Records {len(vulnerabilities)}")
+    return {"vulnerabilities": vulnerabilities}
 
 
 def write_to_json(nvd_data, file_path) -> str | None:
