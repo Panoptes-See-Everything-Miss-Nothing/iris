@@ -81,8 +81,10 @@ def get_cpe_data(configurations):
                         "excluding_version_end": cpe.get("versionEndExcluding"),
                         "including_version_end": cpe.get("versionEndIncluding"),
                     }
-                    cpe_dict.update(parse_fixed_version(criteria))
-                    cpe_list.append(cpe_dict)
+                    result = parse_fixed_version(criteria)
+                    if result:
+                        cpe_dict.update(result)
+                        cpe_list.append(cpe_dict)
 
             if cpe_list:
                 temp_dict = {
@@ -96,23 +98,26 @@ def get_cpe_data(configurations):
     return node_list
 
 
-def parse_fixed_version(criteria) -> dict:
-    # if versionStartIncluding, versionEndExcluding, versionEndIncluding are not present,
-    # package has fixed version in criteria
-    fixed_version = None
-    trimmed_criteria = re.sub("^cpe:\\d+.\\d+:|(:\\*)+", "", criteria)
-    if version := re.search(r"\d+(?:\.\d+)*(?=:)", criteria):
-        fixed_version = version.group()
+def parse_fixed_version(criteria) -> dict | None:
+    try:
+        # if versionStartIncluding, versionEndExcluding, versionEndIncluding are not present,
+        # package has fixed version in criteria
+        fixed_version = None
+        trimmed_criteria = re.sub("^cpe:\\d+.\\d+:|(:\\*)+", "", criteria)
+        if version := re.search(r"\d+(?:\.\d+)*(?=:)", criteria):
+            fixed_version = version.group()
 
-    criteria_list = trimmed_criteria.split(":")
-    category = criteria_list[0]
-    vendor = criteria_list[1]
-    package = criteria_list[2]
+        criteria_list = trimmed_criteria.split(":")
+        category = criteria_list[0]
+        vendor = criteria_list[1]
+        package = criteria_list[2]
 
-    return {
-        "fixed_version": fixed_version,
-        "cpe": criteria,
-        "category": category,
-        "vendor": vendor,
-        "package": package,
-    }
+        return {
+            "fixed_version": fixed_version,
+            "cpe": criteria,
+            "category": category,
+            "vendor": vendor,
+            "package": package,
+        }
+    except IndexError:
+        print(f"Failed to parse criteria {criteria}")
