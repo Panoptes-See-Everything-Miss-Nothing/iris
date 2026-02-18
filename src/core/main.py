@@ -1,19 +1,19 @@
 import sys
 
+import asyncio
+
 from src.utils.nvd_parse import read_from_nvd_api, parse_data
 from src.services.cve_importer import save_cves
-
-from src.settings import CVE_URL
 
 
 if __name__ == "__main__":
     combined_data = dict()
 
-    # json_data = read_from_json(FIXTURES_FILE)
+    # json_data = read_from_json()
     # if json_data:
     #     combined_data.update(json_data)
 
-    api_data = read_from_nvd_api(CVE_URL)
+    api_data = asyncio.run(read_from_nvd_api())
     if api_data:
         combined_data.update(api_data)
 
