@@ -1,36 +1,62 @@
 import json
-from typing import Dict
+import asyncio
+import aiohttp
+from typing import Dict, List
 from math import ceil
-import requests
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.utils.nvd_utils import get_cpe_data, create_version_dictionary
 from src.models.cve import CVE
-from src.settings import SessionLocal
+from src.settings import SessionLocal, CVE_URL, FIXTURES_FILE, NVD_API_KEY
+
+import logging
+
+LOG_FILE = "nvd_client.log"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
+)
+
+logger = logging.getLogger("nvd_client")
 
 
-def read_from_json(file_path) -> Dict | None:
+def read_from_json() -> Dict | None:
     try:
-        with open(file_path, "r") as file:
+        with open(FIXTURES_FILE, "r") as file:
             data = json.load(file)
             return data
     except FileNotFoundError:
-        print(f"Please check path correctly: {file_path}")
+        print(f"Please check path correctly: {FIXTURES_FILE}")
     except Exception as e:
         print(f"Could not parse file: {e}")
 
 
-def deco_time(func):
-    from datetime import datetime
+async def fetch_page(session: aiohttp.ClientSession, params: Dict, page: int) -> List:
+    retries = 5
+    backoff = 2
+    for attempt in range(retries):
+        try:
+            async with session.get(CVE_URL, params=params) as response:
+                if response.status == 429:
+                    wait = backoff**attempt
+                    await asyncio.sleep(wait)
+                    continue
 
-    def wrapper(*args, **kwargs):
-        start = datetime.now()
-        func(*args, **kwargs)
-        print(f"Total Time taken: {datetime.now()-start}")
+                response.raise_for_status()
+                data = await response.json()
+                print(f"Fetched page {page}")
+                logger.info(f"Fetched page {page}")
+                return data.get("vulnerabilities", [])
 
-    return wrapper
+        except aiohttp.ClientError as e:
+            print(f"Error occured for page {page}: {e}")
+            return []
+    print(f"Failed page {page} after retries")
+    return []
 
 
 # Sequential execution:
@@ -39,24 +65,24 @@ def deco_time(func):
 #   With ~30 pages 429 error code
 
 
-@deco_time
-def read_from_nvd_api(base_url: str) -> Dict | None:
-    print("Reading from API", base_url)
-    start_index = 0
+async def read_from_nvd_api() -> Dict | None:
+    print("Reading from API", CVE_URL)
     page_size = 2000
-    params = {"resultsPerPage": page_size, "startIndex": start_index}
 
-    with requests.Session() as session:
+    header = {"apiKey": NVD_API_KEY}
+
+    async with aiohttp.ClientSession(headers=header) as session:
         try:
-            response = session.get(base_url, params=params)
-            response.raise_for_status()
-        except requests.RequestException as e:
+            async with session.get(
+                CVE_URL, params={"resultsPerPage": page_size, "startIndex": 0}
+            ) as response:
+                response.raise_for_status()
+                data = await response.json()
+        except aiohttp.ClientError as e:
             print(f"Intial API call Failed: {e}")
             return
 
-        data = response.json()
         vulnerabilities = []
-
         total_results = data.get("totalResults", 0)
         print(f"Total Records reported by API: {total_results}")
 
@@ -68,18 +94,17 @@ def read_from_nvd_api(base_url: str) -> Dict | None:
         page_count = ceil(total_results / page_size)
         print(f"Total pages {page_count}")
 
+        tasks = []  # prepare concurrent tasks for remaining pages
         for page in range(1, page_count):
             print(f"Fetching from page {page}/{page_count}")
-            params["startIndex"] = page * page_size
+            params = {"resultsPerPage": page_size, "startIndex": page * page_size}
 
-            try:
-                response = session.get(base_url, params=params)
-                response.raise_for_status()
-                data = response.json()
-                vulnerabilities.extend(data.get("vulnerabilities", []))
-            except requests.RequestException as e:
-                print(f"Error Occured for page count{page}: {e}")
-                continue
+            tasks.append(fetch_page(session, params, page))
+
+        if tasks:
+            results = await asyncio.gather(*tasks)
+            for page_data in results:
+                vulnerabilities.extend(page_data)
 
     print(f"Total Records {len(vulnerabilities)}")
     return {"vulnerabilities": vulnerabilities}
