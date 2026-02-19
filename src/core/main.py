@@ -1,12 +1,19 @@
 import sys
-
 import asyncio
+import logging
+
 
 from src.utils.nvd_parse import read_from_nvd_api, parse_data
 from src.services.cve_importer import save_cves
+from src.logger_config import setup_logging
+
+setup_logging()
+
+logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
+    logger.info("Execution started")
     combined_data = dict()
 
     # json_data = read_from_json()
@@ -33,3 +40,4 @@ if __name__ == "__main__":
             print("No data present")
         else:
             print("Failed to save CVE objects")
+    logger.info("Execution Stooped")

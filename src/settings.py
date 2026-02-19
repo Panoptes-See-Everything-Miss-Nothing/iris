@@ -22,6 +22,9 @@ DATABASE_URL = (
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 CVE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+LOG_DIR = PROJECT_ROOT / "logs"
+
+os.makedirs(LOG_DIR, exist_ok=True)
 
 
 def get_db():
