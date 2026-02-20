@@ -1,4 +1,7 @@
 from enum import StrEnum
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # this is factory method which returns a method from last return stmt
@@ -10,7 +13,7 @@ def from_raw_factory():
         try:
             return cls(clean).value
         except ValueError:
-            print(f"Unknown {cls.__name__} value {raw_value}")
+            logger.error("Unknown %s value %s", cls.__name__, raw_value)
             return None
 
     return classmethod(from_raw)

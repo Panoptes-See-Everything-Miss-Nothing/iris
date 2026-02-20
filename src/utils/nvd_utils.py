@@ -1,4 +1,5 @@
 import re
+import logging
 from typing import Dict, List
 
 from .attack_vectors import (
@@ -16,6 +17,8 @@ from .attack_vectors import (
     AccessVector,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
     cvss_obj = cvss_obj_list[0]
@@ -24,9 +27,7 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
 
     if cvss_data:
         result["baseScore"] = cvss_data.get("baseScore")
-        result["baseSeverity"] = BaseSeverity.from_raw(
-            cvss_obj.get("baseSeverity")
-        )  # this calls from_raw()
+        result["baseSeverity"] = BaseSeverity.from_raw(cvss_obj.get("baseSeverity"))
         result["attackVector"] = AttackVector.from_raw(
             AttackVector.from_raw(cvss_data.get("attackVector"))
         )
@@ -64,7 +65,6 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
 
 
 def get_cpe_data(configurations):
-    print("Getting CPE data")
     node_list = []
     for node in configurations:
         temp_dict = dict()
@@ -120,4 +120,4 @@ def parse_fixed_version(criteria) -> dict | None:
             "package": package,
         }
     except IndexError:
-        print(f"Failed to parse criteria {criteria}")
+        logger.exception("Failed to parse criteria", extra={"criteria": criteria})

@@ -2,6 +2,7 @@ import json
 import asyncio
 import aiohttp
 from math import ceil
+import logging
 from typing import Dict, List
 
 from sqlalchemy import select
@@ -10,8 +11,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from src.utils.nvd_utils import get_cpe_data, create_version_dictionary
 from src.models.cve import CVE
 from src.settings import SessionLocal, CVE_URL, FIXTURES_FILE, NVD_API_KEY
-
-import logging
 
 logger = logging.getLogger(__name__)
 
