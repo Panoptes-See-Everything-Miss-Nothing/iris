@@ -1,16 +1,35 @@
-from src.utils.nvd_parse import read_from_json, parse_data
-from src.services.cve_importer import save_cves
+import sys
+import asyncio
+import logging
 
-from src.settings import FIXTURES_FILE
+
+from src.utils.nvd_parse import read_from_nvd_api, parse_data
+from src.services.cve_importer import save_cves
+from src.logger_config import setup_logging
+
+setup_logging()
+
+logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    data = read_from_json(FIXTURES_FILE)
+    logger.info("Execution started")
+    combined_data = dict()
 
-    if not data:
-        pass
-    cve_objects = parse_data(data)
-    # print(cve_objects)
+    # json_data = read_from_json()
+    # if json_data:
+    #     combined_data.update(json_data)
+
+    api_data = asyncio.run(read_from_nvd_api())
+    if api_data:
+        combined_data.update(api_data)
+
+    if not combined_data:
+        print("No data to parse")
+        sys.exit(1)
+
+    cve_objects = parse_data(combined_data)
+    cve_objects = []
     if not cve_objects:
         print("No new CVEs found")
     else:
@@ -21,3 +40,4 @@ if __name__ == "__main__":
             print("No data present")
         else:
             print("Failed to save CVE objects")
+    logger.info("Execution Stooped")

@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -9,6 +10,8 @@ from src.models.vulnerable_package import VulnerablePackage
 from src.models.vulnerable_version import VulnerableVersion
 from .cvss_scores import parse_cvss_v2, parse_cvss_v3
 from src.settings import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 
 def get_or_create_vendor(vendor_name: Optional[str], db: Session) -> Optional[Vendor]:
@@ -45,46 +48,48 @@ def save_cves(cve_objects: List[Dict]) -> bool | None:
 
                 # Process VulnerablePackage data
                 if not save_package_info(cve_id, item, db):
-                    print("Failed to save package info {cve}")
+                    logger.error(
+                        "Failed to save package info", extra={"cve_id": cve_id}
+                    )
                     failed_cves.append(cve_id)
                     continue
 
                 cvss_v2 = save_cvss_v2(cve_id, item.get("cvss_v2", {}))
                 if not cvss_v2:
-                    print("Failed to save CVSS V2 {cve}")
+                    logger.error("Failed to save CVSS V2", extra={"cve": cve_id})
                     failed_cves.append(cve_id)
                     continue
                 db.add(cvss_v2)
                 cvss_v31 = save_cvss_v3(cve_id, item.get("cvss_v3", {}))
 
                 if not cvss_v31:
-                    print("Failed to save CVSS V31 for {cve}")
+                    logger.error("Failed to save CVSS V31 for", extra={"cve": cve_id})
                     failed_cves.append(cve_id)
                     continue
                 db.add(cvss_v31)
 
                 db.commit()
                 saved_cves.append(cve_id)
-                print(f"Successfully saved {(cve_id)}")
+                logger.info("Successfully saved %s", cve_id)
 
-            print(f"Successfully saved {len(saved_cves)}")
+            logger.info("Successfully saved %s", len(saved_cves))
             if failed_cves:
-                print(f"Failed CVE count {len(failed_cves)}")
+                logger.error("Failed CVE count %s", len(failed_cves))
             return True
 
-        except IntegrityError as e:
+        except IntegrityError:
             db.rollback()
-            print(f"Integrity error while saving CVEs: {e.orig}")
+            logger.exception("Integrity error while saving CVEs")
             success = False
 
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             db.rollback()
-            print(f"Database error: {e}")
+            logger.exception("Database error")
             success = False
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print(f"Unexpected error: {e}")
+            logger.exception("Unexpected error")
             success = False
     return success
 
@@ -106,12 +111,12 @@ def save_package_info(cve: str | None, item: dict, db: Session) -> bool:
             db.flush()
 
             if not has_version_info:
-                print(f"{cve} has no package version info")
+                logger.info("No package version info", extra={"cve": cve})
                 return False
 
             # Add VulnerableVersion
             if not save_package_version_info(pkg_entry, pkg, db):
-                print("Failed to save package info")
+                logger.error("Failed to save package info", extra={"cve": cve})
                 return False
     return True
 
@@ -147,11 +152,11 @@ def save_cvss_v2(cve_id, v2):
     cvss_v2 = parse_cvss_v2(cve_id, v2)
     if cvss_v2:
         return cvss_v2
-    print(f"Failed to save CVSS V2 score for {cve_id}")
+    logger.error("Failed to save CVSS V2 score for %s", cve_id)
 
 
 def save_cvss_v3(cve_id, v3):
     cvss_v3 = parse_cvss_v3(cve_id, v3)
     if cvss_v3:
         return cvss_v3
-    print(f"Failed to save CVSS V2 score for {cve_id}")
+    logger.error("Failed to save CVSS V2 score for %s", cve_id)
