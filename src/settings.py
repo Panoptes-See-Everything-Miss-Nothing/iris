@@ -13,9 +13,9 @@ DATABASE = os.getenv("DATABASE")
 NVD_API_KEY = os.getenv("NVD_API_KEY")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+JSON_FEED_ROOT_URL = "https://nvd.nist.gov/feeds/json/cve/2.0"
+
 FIXTURES_DIR = PROJECT_ROOT / "src/fixtures"
-DEFAULT_FIXTURES_FILE = FIXTURES_DIR / "nvdcve_2.0.json"
-FIXTURES_FILE = os.getenv("FIXTURES_FILE", str(DEFAULT_FIXTURES_FILE))
 DATABASE_URL = (
     f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE}"
 )
