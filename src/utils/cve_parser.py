@@ -16,7 +16,7 @@ from .cve_vectors import (
     Scope,
     AccessVector,
 )
-from src.utils.nvd_parser import get_existing_cve_ids
+from src.crud.cve_lookup import get_existing_cve_ids, is_updated
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,9 @@ def parse_fixed_version(criteria) -> dict | None:
         logger.exception("Failed to parse criteria", extra={"criteria": criteria})
 
 
-def parse_data(data) -> list | None:
+def parse_data(data: dict | None) -> list[Dict] | None:
+    """Parse file/API and return CVEs that are either new or need updating."""
+
     existing_cves = get_existing_cve_ids()
 
     if existing_cves is None:
@@ -140,17 +142,27 @@ def parse_data(data) -> list | None:
             continue
 
         if cve_id in existing_cves:
-            logger.info("CVE already exists, skipping", extra={"cve_id": cve_id})
-            continue
+            if not is_updated(cve_obj):
+                logger.info("CVE already exists, skipping", extra={"cve_id": cve_id})
+                continue
 
-        cve_object = {"cve": cve_id}
+        if cve_object := parse_object(cve_obj):
+            nvd_data.append(cve_object)
+    return nvd_data
+
+
+def parse_object(cve_obj: Dict) -> Dict | None:
+    cve_id = cve_obj.get("id")
+    parsed_cve_object = {"cve": cve_id}
+
+    try:
         if configurations := cve_obj.get("configurations"):
             cpe_data = get_cpe_data(configurations)
             if not cpe_data:
                 logger.error("Failed to fetch CPE data for", extra={"cve_id": cve_id})
-                continue
+                return None
 
-            cve_object.update(
+            parsed_cve_object.update(
                 {
                     "source": cve_obj.get("sourceIdentifier"),
                     "published_date": cve_obj.get("published"),
@@ -171,13 +183,13 @@ def parse_data(data) -> list | None:
             if metrics:
                 cvss_v2 = metrics.get("cvssMetricV2")
                 if cvss_v2:
-                    cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
+                    parsed_cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
 
                 cvss_v3 = metrics.get("cvssMetricV31")
                 if cvss_v3:
-                    cve_object["cvss_v3"] = create_version_dictionary(cvss_v3)
-            nvd_data.append(cve_object)
-
-        else:
-            logger.info(f"No CPE data found for {cve_id}")
-    return nvd_data
+                    parsed_cve_object["cvss_v3"] = create_version_dictionary(cvss_v3)
+            return parsed_cve_object
+        logger.error("Could not find configuration information of %s", cve_id)
+    except Exception:
+        logger.exception("Could not parse %s", cve_id)
+        return None
