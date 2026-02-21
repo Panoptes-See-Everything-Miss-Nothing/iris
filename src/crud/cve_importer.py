@@ -79,17 +79,17 @@ def save_cves(cve_objects: List[Dict]) -> bool | None:
 
         except IntegrityError:
             db.rollback()
-            logger.exception("Integrity error while saving CVEs")
+            logger.exception("Duplicate CVE", extra={"cve_id": cve_id})
             success = False
 
         except SQLAlchemyError:
             db.rollback()
-            logger.exception("Database error")
+            logger.exception("Database Connection failed")
             success = False
 
         except Exception:
             db.rollback()
-            logger.exception("Unexpected error")
+            logger.exception("Unexpected error occured")
             success = False
     return success
 
@@ -149,14 +149,12 @@ def save_package_version_info(pkg_entry, pkg, db: Session) -> bool:
 
 
 def save_cvss_v2(cve_id, v2):
-    cvss_v2 = parse_cvss_v2(cve_id, v2)
-    if cvss_v2:
+    if cvss_v2 := parse_cvss_v2(cve_id, v2):
         return cvss_v2
     logger.error("Failed to save CVSS V2 score for %s", cve_id)
 
 
 def save_cvss_v3(cve_id, v3):
-    cvss_v3 = parse_cvss_v3(cve_id, v3)
-    if cvss_v3:
+    if cvss_v3 := parse_cvss_v3(cve_id, v3):
         return cvss_v3
     logger.error("Failed to save CVSS V2 score for %s", cve_id)
