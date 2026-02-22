@@ -65,11 +65,11 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
     return result
 
 
-def get_cpe_data(configurations):
+def get_cpe_data(configurations: List[Dict]) -> List:
     node_list = []
     for node in configurations:
         temp_dict = dict()
-        for _ in node.get("nodes"):
+        for _ in node.get("nodes", []):
             temp_dict["operator"] = _["operator"]
             temp_dict["negate"] = _["negate"]
             cpe_list = []
@@ -91,19 +91,17 @@ def get_cpe_data(configurations):
                 temp_dict = {
                     "operator": _["operator"],
                     "negate": _["negate"],
-                    "cpe": cpe_list,
+                    "cpe_list": cpe_list,
                 }
                 node_list.append(temp_dict)
-                # return temp_dict
-            # pprint.pp(temp_dict)
     return node_list
 
 
 def parse_fixed_version(criteria) -> dict | None:
+    # if versionStartIncluding, versionEndExcluding, versionEndIncluding are not present,
+    # package has fixed version in criteria
+    fixed_version = None
     try:
-        # if versionStartIncluding, versionEndExcluding, versionEndIncluding are not present,
-        # package has fixed version in criteria
-        fixed_version = None
         trimmed_criteria = re.sub("^cpe:\\d+.\\d+:|(:\\*)+", "", criteria)
         if version := re.search(r"\d+(?:\.\d+)*(?=:)", criteria):
             fixed_version = version.group()
@@ -115,7 +113,7 @@ def parse_fixed_version(criteria) -> dict | None:
 
         return {
             "fixed_version": fixed_version,
-            "cpe": criteria,
+            "criteria": criteria,
             "category": category,
             "vendor": vendor,
             "package": package,
@@ -124,7 +122,7 @@ def parse_fixed_version(criteria) -> dict | None:
         logger.exception("Failed to parse criteria", extra={"criteria": criteria})
 
 
-def parse_data(data: dict | None) -> list[Dict] | None:
+def parse_data(data: Dict) -> list[Dict] | None:
     """Parse file/API and return CVEs that are either new or need updating."""
 
     existing_cves = get_existing_cve_ids()
@@ -134,7 +132,7 @@ def parse_data(data: dict | None) -> list[Dict] | None:
         return None
 
     nvd_data = []
-    for _ in data["vulnerabilities"]:
+    for _ in data.get("vulnerabilities", []):
         cve_obj = _.get("cve")
         cve_id = cve_obj.get("id")
         if not cve_id:
@@ -164,6 +162,7 @@ def parse_object(cve_obj: Dict) -> Dict | None:
 
             parsed_cve_object.update(
                 {
+                    "cpe_nodes": cpe_data,
                     "source": cve_obj.get("sourceIdentifier"),
                     "published_date": cve_obj.get("published"),
                     "modified_date": cve_obj.get("lastModified"),
@@ -180,15 +179,17 @@ def parse_object(cve_obj: Dict) -> Dict | None:
                 }
             )
             metrics = cve_obj.get("metrics")
-            if metrics:
-                cvss_v2 = metrics.get("cvssMetricV2")
-                if cvss_v2:
-                    parsed_cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
+            if not metrics:
+                logger.error("CVE data not present", extra={"cve_id": cve_id})
+                return None
 
-                cvss_v3 = metrics.get("cvssMetricV31")
-                if cvss_v3:
-                    parsed_cve_object["cvss_v3"] = create_version_dictionary(cvss_v3)
+            if cvss_v2 := metrics.get("cvssMetricV2"):
+                parsed_cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
+
+            if cvss_v31 := metrics.get("cvssMetricV31"):
+                parsed_cve_object["cvss_v31"] = create_version_dictionary(cvss_v31)
             return parsed_cve_object
+
         logger.error("Could not find configuration information of %s", cve_id)
     except Exception:
         logger.exception("Could not parse %s", cve_id)

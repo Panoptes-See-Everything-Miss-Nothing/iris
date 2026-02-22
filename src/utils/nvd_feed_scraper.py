@@ -45,7 +45,9 @@ def get_json_feed_files() -> List[str]:
     return file_paths
 
 
-def download_zip_file(session: requests.Session, file_url: str, year: int):
+def download_zip_file(
+    session: requests.Session, file_url: str, year: int
+) -> str | None:
     json_file = f"{FIXTURES_DIR}/{year}.json"
     if os.path.exists(json_file):
         logger.info("File already exists, skipping %s", json_file)

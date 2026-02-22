@@ -1,14 +1,16 @@
 import logging
 from typing import Dict, List, Optional
 
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.models.cve import CVE
 from src.models.vendor import Vendor
 from src.models.vulnerable_package import VulnerablePackage
 from src.models.vulnerable_version import VulnerableVersion
-from .cvss_scores import parse_cvss_v2, parse_cvss_v3
+from .cvss_scores import upsert_cvss_v2, upsert_cvss_v31
 from src.settings import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -25,17 +27,15 @@ def get_or_create_vendor(vendor_name: Optional[str], db: Session) -> Optional[Ve
     return vendor
 
 
-def save_cves(cve_objects: List[Dict]) -> bool | None:
+def save_or_update_cves(cve_objects: List[Dict]) -> bool:
     success = True
     failed_cves = []
     saved_cves = []
     with SessionLocal() as db:
-        try:
-            for item in cve_objects:
-                cve_id = item.get("cve")
-
-                # Process CVE model data
-                cve_obj = CVE(
+        for item in cve_objects:
+            cve_id = item.get("cve")
+            try:
+                stmt = insert(CVE).values(
                     cve_id=cve_id,
                     published=item.get("published_date"),
                     last_modified=item.get("modified_date"),
@@ -43,74 +43,113 @@ def save_cves(cve_objects: List[Dict]) -> bool | None:
                     vuln_status=item.get("status"),
                     source=item.get("source"),
                 )
-                db.add(cve_obj)
-                db.flush()  # Get cve.id immediately
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=[CVE.cve_id],
+                    set_={
+                        col.name: getattr(stmt.excluded, col.name)
+                        for col in CVE.__table__.columns
+                        if col.name not in ("id", "cve_id")  # avoid overwriting PK
+                    },
+                )
+                db.execute(stmt)
 
-                # Process VulnerablePackage data
-                if not save_package_info(cve_id, item, db):
+                # Get CVE object
+                cve = db.scalar(select(CVE).where(CVE.cve_id == cve_id))
+                if not cve:
                     logger.error(
-                        "Failed to save package info", extra={"cve_id": cve_id}
+                        "Failed to retrieve CVE after upsert", extra={"cve_id": cve_id}
                     )
                     failed_cves.append(cve_id)
                     continue
 
-                cvss_v2 = save_cvss_v2(cve_id, item.get("cvss_v2", {}))
-                if not cvss_v2:
-                    logger.error("Failed to save CVSS V2", extra={"cve": cve_id})
+                # Process package and version info
+                if not upsert_vulnerable_package_info(cve_id, item, db):
+                    logger.error(
+                        "Failed to save package info", extra={"cve_id": cve_id}
+                    )
                     failed_cves.append(cve_id)
+                    db.rollback()
                     continue
-                db.add(cvss_v2)
-                cvss_v31 = save_cvss_v3(cve_id, item.get("cvss_v3", {}))
 
-                if not cvss_v31:
-                    logger.error("Failed to save CVSS V31 for", extra={"cve": cve_id})
-                    failed_cves.append(cve_id)
-                    continue
-                db.add(cvss_v31)
+                if v2_data := item.get("cvss_v2", {}):
+                    cvss_v2 = upsert_cvss_v2(cve_id, v2_data, db)
+
+                    if not cvss_v2:
+                        logger.error("Failed to save CVSS V2", extra={"cve": cve_id})
+                        failed_cves.append(cve_id)
+                        continue
+
+                if v31_data := item.get("cvss_v31", {}):
+                    cvss_v31 = upsert_cvss_v31(cve_id, v31_data, db)
+
+                    if not cvss_v31:
+                        logger.error(
+                            "Failed to save CVSS V31 for", extra={"cve": cve_id}
+                        )
+                        failed_cves.append(cve_id)
+                        continue
 
                 db.commit()
                 saved_cves.append(cve_id)
                 logger.info("Successfully saved %s", cve_id)
+            except IntegrityError:
+                db.rollback()
+                logger.exception("Duplicate CVE", extra={"cve_id": cve_id})
+                success = False
 
-            logger.info("Successfully saved %s", len(saved_cves))
-            if failed_cves:
-                logger.error("Failed CVE count %s", len(failed_cves))
-            return True
+            except SQLAlchemyError:
+                db.rollback()
+                logger.exception("Database Connection failed")
+                success = False
 
-        except IntegrityError:
-            db.rollback()
-            logger.exception("Duplicate CVE", extra={"cve_id": cve_id})
-            success = False
+            except Exception:
+                db.rollback()
+                logger.exception("Unexpected error occured")
+                success = False
 
-        except SQLAlchemyError:
-            db.rollback()
-            logger.exception("Database Connection failed")
-            success = False
-
-        except Exception:
-            db.rollback()
-            logger.exception("Unexpected error occured")
-            success = False
+        logger.info("Successfully saved %s", len(saved_cves))
+        if failed_cves:
+            logger.error("Failed CVE count %s", len(failed_cves))
     return success
 
 
-def save_package_info(cve: str | None, item: dict, db: Session) -> bool:
+def upsert_vulnerable_package_info(cve: str, item: dict, db: Session) -> bool:
+    print("Parsing package Info", item)
     for node in item.get("cpe_nodes", []):
-        for pkg_entry in node.get("cpe", []):
+        operator_value = node.get("operator")
+        negate_value = node.get("negate")
+        for pkg_entry in node.get("cpe_list", []):
             vendor_name = pkg_entry.get("vendor")
-            vendor = get_or_create_vendor(vendor_name, db)
+            vendor_obj = get_or_create_vendor(vendor_name, db)
+            pkg_entry["operator"] = operator_value
+            pkg_entry["negate"] = negate_value
 
-            pkg = VulnerablePackage(
+            stmt = insert(VulnerablePackage).values(
                 cve_id=cve,
                 category=pkg_entry.get("category"),
                 package_name=pkg_entry.get("package"),
-                vendor_id=vendor.id if vendor else None,
-                cpe_string=pkg_entry.get("cpe"),
+                vendor_id=vendor_obj.id if vendor_obj else None,
+                cpe_string=pkg_entry.get("criteria"),
             )
-            db.add(pkg)
-            db.flush()
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_vulnerable_package_cve_cpe",
+                set_={
+                    "category": stmt.excluded.get("category"),
+                    "package_name": stmt.excluded.get("package"),
+                    "vendor_id": vendor_obj.id if vendor_obj else None,
+                    "cpe_string": stmt.excluded.get("cpe"),
+                },
+            )
+            db.execute(stmt)
 
-            if not has_version_info:
+            pkg = db.scalar(
+                select(VulnerablePackage).where(
+                    VulnerablePackage.cve_id == cve,
+                    VulnerablePackage.cpe_string == pkg_entry.get("criteria"),
+                )
+            )
+
+            if not has_version_info(pkg_entry):
                 logger.info("No package version info", extra={"cve": cve})
                 return False
 
@@ -135,7 +174,7 @@ def has_version_info(pkg_entry):
 
 
 def save_package_version_info(pkg_entry, pkg, db: Session) -> bool:
-    version_range = VulnerableVersion(
+    stmt = insert(VulnerableVersion).values(
         package_id=pkg.id,
         fixed_version=pkg_entry.get("fixed_version"),
         including_version_start=pkg_entry.get("including_version_start"),
@@ -144,17 +183,13 @@ def save_package_version_info(pkg_entry, pkg, db: Session) -> bool:
         operator=pkg_entry.get("operator"),
         negate=pkg_entry.get("negate", False),
     )
-    db.add(version_range)
+    stmt = stmt.on_conflict_do_update(
+        constraint="uq_version_range_per_package",
+        set_={
+            col.name: getattr(stmt.excluded, col.name)
+            for col in VulnerableVersion.__table__.columns
+            if col.name not in ("id", "package_id")
+        },
+    )
+    db.execute(stmt)
     return True
-
-
-def save_cvss_v2(cve_id, v2):
-    if cvss_v2 := parse_cvss_v2(cve_id, v2):
-        return cvss_v2
-    logger.error("Failed to save CVSS V2 score for %s", cve_id)
-
-
-def save_cvss_v3(cve_id, v3):
-    if cvss_v3 := parse_cvss_v3(cve_id, v3):
-        return cvss_v3
-    logger.error("Failed to save CVSS V2 score for %s", cve_id)

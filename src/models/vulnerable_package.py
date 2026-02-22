@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, Integer, Index
+from sqlalchemy import Column, String, ForeignKey, Integer, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from .base import Base
@@ -27,6 +27,7 @@ class VulnerablePackage(Base):
     )
 
     __table_args__ = (
+        UniqueConstraint("cve_id", "cpe_string", name="uq_vulnerable_package_cve_cpe"),
         Index("idx_vendor_package", "vendor_id", "package_name"),
         Index("ix_package_cve", "cve_id"),
     )

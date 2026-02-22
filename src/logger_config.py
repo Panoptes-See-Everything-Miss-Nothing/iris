@@ -25,7 +25,7 @@ LOGGING_CONFIG = {
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": f"{LOG_DIR}/app_{datetime.now().strftime("%d-%m-%Y_%H:%M")}.log",
+            "filename": f"{LOG_DIR}/app_{datetime.now().strftime("%d-%m-%Y")}.log",
             "maxBytes": 5 * 1024 * 1024,  # 5MB
             "backupCount": 5,
             "formatter": "detailed",

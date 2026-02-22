@@ -1,8 +1,15 @@
+from typing import Dict
+import logging
+
+from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert
 from src.models.cvss import CVSSv2, CVSSv31
 
+logger = logging.getLogger(__name__)
 
-def parse_cvss_v2(cve_id, v2):
-    cvss_v2 = CVSSv2(
+
+def upsert_cvss_v2(cve_id: str, v2: Dict, db: Session) -> bool:
+    stmt = insert(CVSSv2).values(
         cve_id=cve_id,
         base_score=v2.get("baseScore"),
         base_severity=v2.get("baseSeverity"),
@@ -22,12 +29,21 @@ def parse_cvss_v2(cve_id, v2):
         obtain_other_privilege=v2.get("obtainOtherPrivilege"),
         user_interaction_required=v2.get("userInteractionRequired"),
     )
-    print("CVSS2", v2)
-    return cvss_v2
+    stmt = stmt.on_conflict_do_update(
+        constraint="uq_cvss_v2_cve",
+        set_={
+            col.name: getattr(stmt.excluded, col.name)
+            for col in CVSSv2.__table__.columns
+            if col.name not in ("id", "cve_id")  # avoid overwriting PK
+        },
+    )
+    db.execute(stmt)
+    logger.info("Saved CVSS v2 for %s", cve_id)
+    return True
 
 
-def parse_cvss_v3(cve_id, v3):
-    cvss_v3 = CVSSv31(
+def upsert_cvss_v31(cve_id: str, v3: Dict, db: Session) -> bool:
+    stmt = insert(CVSSv31).values(
         cve_id=cve_id,
         base_score=v3.get("baseScore"),
         base_severity=v3.get("baseSeverity"),
@@ -43,5 +59,14 @@ def parse_cvss_v3(cve_id, v3):
         impact_score=v3.get("impactScore"),
         vector_string=v3.get("vectorString"),
     )
-    print("CVSS3", v3)
-    return cvss_v3
+    stmt = stmt.on_conflict_do_update(
+        constraint="uq_cvss_v31_cve",
+        set_={
+            col.name: getattr(stmt.excluded, col.name)
+            for col in CVSSv31.__table__.columns
+            if col.name not in ("id", "cve_id")  # avoid overwriting PK
+        },
+    )
+    db.execute(stmt)
+    logger.info("Saved CVSS v31 for %s", cve_id)
+    return True
