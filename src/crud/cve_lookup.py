@@ -30,10 +30,9 @@ def get_existing_cve_ids() -> set | None:
 
     except (IntegrityError, SQLAlchemyError):
         logger.exception("Database error while fetching existing CVEs")
-        return None
     except Exception:
         logger.exception("Unexpected error during DB check")
-        return None
+    return None
 
 
 def is_updated(cve_obj: Dict) -> bool:

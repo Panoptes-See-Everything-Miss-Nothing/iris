@@ -3,7 +3,7 @@ import asyncio
 import aiohttp
 import logging
 from math import ceil
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from src.settings import CVE_URL, NVD_API_KEY
@@ -11,7 +11,7 @@ from src.settings import CVE_URL, NVD_API_KEY
 logger = logging.getLogger(__name__)
 
 
-def read_from_json(file_path: str) -> List | None:
+def read_from_json(file_path: str) -> List[Dict] | None:
     try:
         with open(file_path, "r") as fobj:
             data = json.load(fobj)
@@ -46,7 +46,6 @@ async def fetch_page(session: aiohttp.ClientSession, params: Dict, page: int) ->
 
                 response.raise_for_status()
                 data = await response.json()
-                logger.info(f"Fetched page {page}")
                 return data.get("vulnerabilities", [])
 
         except aiohttp.ClientError:
@@ -57,7 +56,7 @@ async def fetch_page(session: aiohttp.ClientSession, params: Dict, page: int) ->
 
 
 async def read_from_nvd_api() -> Dict | None:
-    logger.info("Reading from API", extra={"cve_url": CVE_URL})
+    logger.info("Reading from API %s", CVE_URL)
     page_size = 2000
     header = {"apiKey": NVD_API_KEY}
 
@@ -72,13 +71,13 @@ async def read_from_nvd_api() -> Dict | None:
             logger.exception("Intial API call Failed")
             return
 
-        vulnerabilities = []
         total_results = data.get("totalResults", 0)
         logger.info("Total Records reported by API %s", total_results)
 
         if not total_results:
-            return {"vulnerabilities": vulnerabilities}
+            return {"vulnerabilities": []}
 
+        vulnerabilities = []
         vulnerabilities.extend(data.get("vulnerabilities", []))
 
         page_count = ceil(total_results / page_size)
@@ -101,14 +100,19 @@ async def read_from_nvd_api() -> Dict | None:
 
 
 def parse_datetime(dt_str: Optional[str]) -> Optional[datetime]:
-    """Parse NVD-style datetime string safely."""
+    """Parse NVD-style datetime string safely and ensure UTC-aware."""
     if not dt_str:
         return None
+
     dt_str = dt_str.replace("Z", "+00:00")
+
     try:
-        return datetime.fromisoformat(dt_str)
+        dt = datetime.fromisoformat(dt_str)
     except ValueError:
-        try:
-            return datetime.fromisoformat(dt_str + "+00:00")
-        except ValueError:
-            return None
+        return None
+
+    # Ensure timezone-aware (force UTC if missing)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    return dt.astimezone(timezone.utc)
