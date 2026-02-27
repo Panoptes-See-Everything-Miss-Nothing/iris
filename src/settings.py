@@ -2,13 +2,14 @@ import os
 from pathlib import Path
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 
 
 DB_USERNAME = os.getenv("DB_USERNAME")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
+DB_PORT = int(os.getenv("DB_PORT", 5432))
 DATABASE = os.getenv("DATABASE")
 NVD_API_KEY = os.getenv("NVD_API_KEY")
 
@@ -16,8 +17,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 JSON_FEED_ROOT_URL = "https://nvd.nist.gov/feeds/json/cve/2.0"
 
 FIXTURES_DIR = PROJECT_ROOT / "src/fixtures"
-DATABASE_URL = (
-    f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE}"
+DATABASE_URL = URL.create(
+    drivername="postgresql",
+    username=DB_USERNAME,
+    password=DB_PASSWORD,
+    host=DB_HOST,
+    port=DB_PORT,
+    database=DATABASE,
 )
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
