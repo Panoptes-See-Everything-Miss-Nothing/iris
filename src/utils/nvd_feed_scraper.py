@@ -1,5 +1,4 @@
-from asyncio import as_completed
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import gzip
 import os
@@ -54,6 +53,7 @@ def download_zip_file(
         return json_file
 
     logger.info("Downloading file %s", file_url)
+    temp_name = None
     try:
         with session.get(file_url, stream=True, timeout=60) as response:
             response.raise_for_status()
@@ -68,4 +68,6 @@ def download_zip_file(
         return json_file
     except Exception:
         logger.exception("Could not fetch file %s", file_url)
+        if temp_name and os.path.exists(temp_name):
+            os.remove(temp_name)
         return None

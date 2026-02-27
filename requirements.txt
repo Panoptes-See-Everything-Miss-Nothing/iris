@@ -1,3 +1,11 @@
+# Runtime dependencies
+aiohttp==3.13.3
+alembic==1.17.2
+psycopg2-binary==2.9.11
+requests==2.32.5
+SQLAlchemy==2.0.45
+
+# Dev / formatting tools
 black==25.11.0
 cfgv==3.5.0
 click==8.3.1

@@ -74,7 +74,7 @@ def get_cpe_data(configurations: List[Dict]) -> List:
             temp_dict["negate"] = _["negate"]
             cpe_list = []
 
-            for cpe in _.get("cpeMatch"):
+            for cpe in _.get("cpeMatch", []):
                 if cpe.get("vulnerable"):
                     criteria = cpe.get("criteria")
                     cpe_dict = {

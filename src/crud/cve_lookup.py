@@ -37,11 +37,24 @@ def get_existing_cve_ids() -> set | None:
 
 def is_updated(cve_obj: Dict) -> bool:
     cve_id = cve_obj.get("id")
-    with SessionLocal() as db:
-        existing_cve = db.scalar(select(CVE).where(CVE.cve_id == cve_id))
+    try:
+        with SessionLocal() as db:
+            existing_cve = db.scalar(select(CVE).where(CVE.cve_id == cve_id))
 
-        if existing_cve:
-            new_last_mod = parse_datetime(cve_obj.get("lastModified"))
-            if new_last_mod and new_last_mod > existing_cve.last_modified:
-                return True
+            if existing_cve:
+                new_last_mod = parse_datetime(cve_obj.get("lastModified"))
+                if new_last_mod and new_last_mod > existing_cve.last_modified:
+                    return True
+    except TypeError:
+        logger.exception(
+            "Timezone mismatch comparing last_modified for %s — treating as updated",
+            cve_id,
+        )
+        return True
+    except (IntegrityError, SQLAlchemyError):
+        logger.exception(
+            "Database error checking if CVE is updated", extra={"cve_id": cve_id}
+        )
+    except Exception:
+        logger.exception("Unexpected error in is_updated", extra={"cve_id": cve_id})
     return False

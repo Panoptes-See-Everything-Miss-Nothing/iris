@@ -114,7 +114,6 @@ def save_or_update_cves(cve_objects: List[Dict]) -> bool:
 
 
 def upsert_vulnerable_package_info(cve: str, item: dict, db: Session) -> bool:
-    print("Parsing package Info", item)
     for node in item.get("cpe_nodes", []):
         operator_value = node.get("operator")
         negate_value = node.get("negate")
@@ -134,10 +133,10 @@ def upsert_vulnerable_package_info(cve: str, item: dict, db: Session) -> bool:
             stmt = stmt.on_conflict_do_update(
                 constraint="uq_vulnerable_package_cve_cpe",
                 set_={
-                    "category": stmt.excluded.get("category"),
-                    "package_name": stmt.excluded.get("package"),
-                    "vendor_id": vendor_obj.id if vendor_obj else None,
-                    "cpe_string": stmt.excluded.get("cpe"),
+                    "category": stmt.excluded.category,
+                    "package_name": stmt.excluded.package_name,
+                    "vendor_id": stmt.excluded.vendor_id,
+                    "cpe_string": stmt.excluded.cpe_string,
                 },
             )
             db.execute(stmt)
