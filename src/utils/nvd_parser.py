@@ -48,6 +48,9 @@ async def fetch_page(session: aiohttp.ClientSession, params: Dict, page: int) ->
                 data = await response.json()
                 return data.get("vulnerabilities", [])
 
+        except asyncio.TimeoutError:
+            logger.error("Timeout fetching page %s, giving up on this page", page)
+            return []
         except aiohttp.ClientError:
             logger.exception("Error occured for page", extra={"page": page})
             return []
@@ -60,13 +63,17 @@ async def read_from_nvd_api() -> Dict | None:
     page_size = 2000
     header = {"apiKey": NVD_API_KEY}
 
-    async with aiohttp.ClientSession(headers=header) as session:
+    timeout = aiohttp.ClientTimeout(total=30, connect=10)
+    async with aiohttp.ClientSession(headers=header, timeout=timeout) as session:
         try:
             async with session.get(
                 CVE_URL, params={"resultsPerPage": page_size, "startIndex": 0}
             ) as response:
                 response.raise_for_status()
                 data = await response.json()
+        except asyncio.TimeoutError:
+            logger.error("Initial API call timed out")
+            return
         except aiohttp.ClientError:
             logger.exception("Intial API call Failed")
             return
