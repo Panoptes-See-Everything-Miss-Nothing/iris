@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: cve-postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+    ports:
+      - "127.0.0.1:${DB_PORT}:5432"
+    volumes:
+      - cve_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  cve_pg_data:
+    name: cve_pg_data
