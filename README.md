@@ -19,7 +19,7 @@
   🔎 Check the <a href="https://github.com/Panoptes-See-Everything-Miss-Nothing">Panoptes homepage here</a>.
 </p>
 
-# Iris — Messenger of the Gods
+# Iris — The Messenger
 
 Iris is a CVE data ingestion pipeline that fetches vulnerability data from the [National Vulnerability Database (NVD)](https://nvd.nist.gov/) and stores it in a PostgreSQL database for downstream consumption.
 
@@ -321,3 +321,4 @@ This means:
 For more details on GPLv3, visit: [https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ---
+
