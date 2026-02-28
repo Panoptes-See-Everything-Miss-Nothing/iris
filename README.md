@@ -1,3 +1,24 @@
+<p align="center">
+  <img src="assets/branding/panoptes-logo.png" alt="Panoptes Logo" width="200">
+</p>
+
+<h1 align="center">Panoptes</h1>
+<p align="center"><em>See Everything. Miss Nothing.</em></p>
+
+<p align="center">
+  <a href="https://en.cppreference.com/w/cpp/20"><img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++20"></a>
+  <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows%2010%2B-0078d4.svg" alt="Platform"></a>
+  <a href="#build"><img src="https://img.shields.io/badge/arch-x64%20%7C%20x86-green.svg" alt="Architecture"></a>
+  <a href="#license"><img src="https://img.shields.io/badge/license-GPLv3-lightgrey.svg" alt="License"></a>
+</p>
+
+---
+
+<p align="center">
+  Iris a part of the <strong>Panoptes Platform</strong>.<br>
+  🔎 Check the <a href="https://github.com/Panoptes-See-Everything-Miss-Nothing">Panoptes homepage here</a>.
+</p>
+
 # Iris — Messenger of the Gods
 
 Iris is a CVE data ingestion pipeline that fetches vulnerability data from the [National Vulnerability Database (NVD)](https://nvd.nist.gov/) and stores it in a PostgreSQL database for downstream consumption.
@@ -227,3 +248,76 @@ src/
 ├── fixtures/                 # Cached yearly JSON feed files (gitignored)
 └── settings.py               # DB connection, engine, and config
 ```
+
+---
+
+## Documentation
+
+Coming soon.
+
+---
+
+# Core Contributors
+
+## Vaibhav Kakade
+- 💼 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Vaibhav%20Kakade-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/vgkakade/)
+- 𝕏 [![X](https://img.shields.io/badge/X-@vk_appledore-000000?logo=x&logoColor=white)](https://x.com/vk_appledore)
+- 🧑‍💻 [![GitHub](https://img.shields.io/badge/GitHub-vkappledore-181717?logo=github&logoColor=white)](https://github.com/vkappledore/)
+
+## Sanoop Thomas
+- 💼 [![LinkedIn](https://img.shields.io/badge/LinkedIn-s4n7h0-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/s4n7h0/)
+- 𝕏 [![X](https://img.shields.io/badge/X-@s4n7h0-000000?logo=x&logoColor=white)](https://x.com/s4n7h0)
+- 🧑‍💻 [![GitHub](https://img.shields.io/badge/GitHub-s4n7h0-181717?logo=github&logoColor=white)](https://github.com/s4n7h0/)
+
+## Narendra Shinde
+- 💼 [![LinkedIn](https://img.shields.io/badge/LinkedIn-narendrashinde-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/narendrashinde/)
+- 𝕏 [![X](https://img.shields.io/badge/X-@nushinde-000000?logo=x&logoColor=white)](https://x.com/nushinde)
+- 🧑‍💻 [![GitHub](https://img.shields.io/badge/GitHub-Nushinde-181717?logo=github&logoColor=white)](https://github.com/Nushinde)
+
+## Kapil Khot
+- 💼 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Kapil%20Khot-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kapil-khot-50466952/)
+- 𝕏 [![X](https://img.shields.io/badge/X-@kapil_khot-000000?logo=x&logoColor=white)](https://x.com/kapil_khot)
+- 🧑‍💻 [![GitHub](https://img.shields.io/badge/GitHub-SlidingWindow-181717?logo=github&logoColor=white)](https://github.com/SlidingWindow)
+---
+
+# Contributing
+
+Community contributions are welcome.
+
+If you have:
+
+- Detection artefacts  
+- Version mapping improvements  
+- Edge-case installation samples  
+- Performance optimisations  
+- API improvements
+- Test bed and/or test cases
+- Access to vendor-specific advisories that are only available to licensed customers (for validation and correlation testing purposes — proprietary content will not be redistributed)
+   - Some enterprise products publish vulnerability advisories exclusively through customer portals. 
+   - If you are a licensed customer and are willing to help validate version-to-CVE mappings, your collaboration can significantly improve coverage for those platforms.
+      - Contributors are responsible for ensuring they have appropriate vendor approval and rights to share any non-public advisory information.
+
+Open an issue or submit a pull request.
+
+For vulnerabilities, security misconfigurations, or sensitive disclosures, please submit a private issue (feature coming soon) or contact **Kapil Khot** directly.
+
+We take responsible disclosure seriously and will ensure proper acknowledgment and credit for all valid findings.
+
+Let’s build something that actually sees everything.
+
+
+---
+
+# Licensing
+
+Panoptes is licensed under the **GNU General Public License v3 (GPLv3)**.
+
+This means:
+
+- You are free to **use, modify, and distribute** Panoptes.
+- Any modified or derivative works must also be licensed under **GPLv3**.
+- See the [`LICENSE`](LICENSE) file for full terms.
+
+For more details on GPLv3, visit: [https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)
+
+---
