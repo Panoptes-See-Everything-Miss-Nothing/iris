@@ -1,12 +1,8 @@
-<p align="center">
-  <img src="assets/branding/panoptes-logo.png" alt="Panoptes Logo" width="200">
-</p>
-
-<h1 align="center">Panoptes</h1>
-<p align="center"><em>See Everything. Miss Nothing.</em></p>
+<h1 align="center">Iris</h1>
+<p align="center"><em>The Messenger</em></p>
 
 <p align="center">
-  <a href="https://en.cppreference.com/w/cpp/20"><img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++20"></a>
+  <a href="https://docs.python.org/3/"><img src="https://img.shields.io/badge/Python-3-blue.svg" alt="Python 3"></a>
   <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows%2010%2B-0078d4.svg" alt="Platform"></a>
   <a href="#build"><img src="https://img.shields.io/badge/arch-x64%20%7C%20x86-green.svg" alt="Architecture"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-GPLv3-lightgrey.svg" alt="License"></a>
@@ -19,11 +15,11 @@
   🔎 Check the <a href="https://github.com/Panoptes-See-Everything-Miss-Nothing">Panoptes homepage here</a>.
 </p>
 
-# Iris — The Messenger
+# Iris
 
 Iris is a CVE data ingestion pipeline that fetches vulnerability data from the [National Vulnerability Database (NVD)](https://nvd.nist.gov/) and stores it in a PostgreSQL database for downstream consumption.
 
-Iris, the messenger of the Gods — acts as the bridge between NVD and the rest of the Panoptes platform.
+Iris, The Messenger — acts as the bridge between NVD and the rest of the Panoptes platform.
 
 ---
 
@@ -321,4 +317,5 @@ This means:
 For more details on GPLv3, visit: [https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ---
+
 
