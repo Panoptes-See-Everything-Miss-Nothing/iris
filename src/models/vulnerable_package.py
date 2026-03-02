@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, ForeignKey, Integer, Index, UniqueConstraint
-from sqlalchemy.orm import relationship
+from typing import List, Optional
+
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -7,23 +9,23 @@ from .base import Base
 class VulnerablePackage(Base):
     __tablename__ = "vulnerable_packages"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    cve_id = Column(
-        String, ForeignKey("cves.cve_id", ondelete="CASCADE"), nullable=False
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    cve_id: Mapped[str] = mapped_column(
+        ForeignKey("cves.cve_id", ondelete="CASCADE"), nullable=False
     )
-    category = Column(String, nullable=False, index=True)
-    package_name = Column(String, nullable=False, index=True)
-    vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True, index=True)
-    cpe_string = Column(String, nullable=False)
 
-    cve = relationship("CVE", back_populates="packages")
-    vendor = relationship("Vendor", back_populates="packages")
+    category: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    package_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    vendor_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("vendors.id"), nullable=True, index=True
+    )
+    cpe_string: Mapped[str] = mapped_column(String(500), nullable=False)
 
-    versions = relationship(
-        "VulnerableVersion",
-        back_populates="package",
-        cascade="all, delete-orphan",
-        lazy="selectin",  # often better than default lazy loading
+    cve: Mapped["CVE"] = relationship(back_populates="packages")
+    vendor: Mapped[Optional["Vendor"]] = relationship(back_populates="packages")
+    versions: Mapped[List["VulnerableVersion"]] = relationship(
+        back_populates="package", cascade="all, delete-orphan"
     )
 
     __table_args__ = (

@@ -1,22 +1,34 @@
-from sqlalchemy import Column, String, DateTime
-from sqlalchemy.orm import relationship
+from datetime import datetime
+from typing import List, Optional
 
-from .base import Base
+from sqlalchemy import Index, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .base import Base, str_4000
 
 
 class CVE(Base):
     __tablename__ = "cves"
 
-    cve_id = Column(String, primary_key=True, nullable=False)
-    published = Column(DateTime(timezone=True), nullable=True)
-    last_modified = Column(DateTime(timezone=True), nullable=True)
-    description = Column(String, nullable=True)
-    vuln_status = Column(String(70), nullable=True)
-    source = Column(String, nullable=True)
+    cve_id: Mapped[str] = mapped_column(String(50), primary_key=True)
 
-    packages = relationship(
-        "VulnerablePackage", back_populates="cve", cascade="all, delete-orphan"
+    published: Mapped[Optional[datetime]] = mapped_column(index=True)
+    last_modified: Mapped[Optional[datetime]] = mapped_column(index=True)
+
+    description: Mapped[Optional[str_4000]]
+    vuln_status: Mapped[Optional[str]] = mapped_column(String(70))
+    source: Mapped[Optional[str]] = mapped_column(String(100))
+
+    # Relationships
+    packages: Mapped[List["VulnerablePackage"]] = relationship(
+        back_populates="cve", cascade="all, delete-orphan"
     )
 
-    cvss_v2 = relationship("CVSSv2", back_populates="cve", uselist=False)
-    cvss_v3 = relationship("CVSSv31", back_populates="cve", uselist=False)
+    cvss_scores: Mapped[List["CVSSScore"]] = relationship(
+        back_populates="cve", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("ix_cve_published", "published"),
+        Index("ix_cve_last_modified", "last_modified"),
+    )

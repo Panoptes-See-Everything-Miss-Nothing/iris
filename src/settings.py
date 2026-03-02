@@ -32,6 +32,8 @@ CVE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 LOG_DIR = PROJECT_ROOT / "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
+CVE_REJECTED = "Rejected"
+
 
 def get_db():
     db = SessionLocal()

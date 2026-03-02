@@ -1,46 +1,39 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    String,
-    ForeignKey,
-    Integer,
-    Index,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
+from typing import Optional
 
-from .base import Base
+from sqlalchemy import ForeignKey, Index, String, text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .base import Base, str_100
 
 
 class VulnerableVersion(Base):
     __tablename__ = "vulnerable_versions"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    package_id = Column(
-        Integer,
-        ForeignKey("vulnerable_packages.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    fixed_version = Column(String(100), nullable=True)
-    including_version_start = Column(String(100), nullable=True)
-    excluding_version_end = Column(String(100), nullable=True)
-    including_version_end = Column(String(100), nullable=True)
-    operator = Column(String(100), nullable=True)
-    negate = Column(Boolean, default=False, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
-    package = relationship("VulnerablePackage")
+    package_id: Mapped[int] = mapped_column(
+        ForeignKey("vulnerable_packages.id", ondelete="CASCADE"), nullable=False
+    )
+
+    fixed_version: Mapped[Optional[str_100]]
+    including_version_start: Mapped[Optional[str_100]]
+    excluding_version_end: Mapped[Optional[str_100]]
+    including_version_end: Mapped[Optional[str_100]]
+    operator: Mapped[Optional[str]] = mapped_column(String(20))
+    negate: Mapped[Optional[bool]] = mapped_column(default=False)
+
+    package: Mapped["VulnerablePackage"] = relationship(back_populates="versions")
 
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "uq_version_range_per_package",
             "package_id",
-            "fixed_version",
-            "including_version_start",
-            "excluding_version_end",
-            "including_version_end",
-            "operator",
-            "negate",
-            name="uq_version_range_per_package",  # ← give it a name
+            text("COALESCE(fixed_version, '')"),
+            text("COALESCE(including_version_start, '')"),
+            text("COALESCE(excluding_version_end, '')"),
+            text("COALESCE(including_version_end, '')"),
+            text("COALESCE(operator, '')"),
+            unique=True,
         ),
-        # Speed up queries
         Index("ix_version_package_id", "package_id"),
     )

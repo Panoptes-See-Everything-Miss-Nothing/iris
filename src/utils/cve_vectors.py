@@ -84,7 +84,7 @@ class IntegrityImpact(StrEnum):
     from_raw = from_raw_factory()
 
 
-class ConfedentialityImpact(StrEnum):
+class ConfidentialityImpact(StrEnum):
     complete = "complete"
     high = "high"
     none = "none"
