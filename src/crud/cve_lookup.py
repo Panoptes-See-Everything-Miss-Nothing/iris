@@ -36,12 +36,13 @@ def get_existing_cve_ids() -> dict[str, datetime | None] | None:
 
 
 def is_updated(cve_obj: Dict, existing_cves: dict[str, datetime | None]) -> bool:
-    """In-memory check — no DB call needed."""
     cve_id = cve_obj.get("id")
     existing_last_modified = existing_cves.get(cve_id)
 
     new_last_mod = parse_datetime(cve_obj.get("lastModified"))
-    if new_last_mod and existing_last_modified:
-        # DB stores naive UTC; strip timezone before comparing
-        return new_last_mod.replace(tzinfo=None) > existing_last_modified
-    return False
+    if new_last_mod is None:
+        return False
+    if existing_last_modified is None:
+        return True
+    # DB stores naive UTC; strip timezone before comparing
+    return new_last_mod.replace(tzinfo=None) > existing_last_modified
