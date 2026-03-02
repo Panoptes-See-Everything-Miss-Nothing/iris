@@ -2,6 +2,8 @@ import re
 import logging
 from typing import Dict, List
 
+from src.settings import CVE_REJECTED
+
 from .cve_vectors import (
     BaseSeverity,
     UserInteraction,
@@ -132,7 +134,7 @@ def parse_data(data: Dict) -> list[Dict] | None:
     existing_cves = get_existing_cve_ids()
 
     if existing_cves is None:
-        logger.error("Connot proceed database connection failed")
+        logger.error("Cannot proceed database connection failed")
         return None
 
     nvd_data = []
@@ -145,7 +147,7 @@ def parse_data(data: Dict) -> list[Dict] | None:
 
         if cve_id in existing_cves:
             if not is_updated(cve_obj, existing_cves):
-                logger.info("CVE already exists, skipping", extra={"cve_id": cve_id})
+                logger.info("CVE already exists, skipping %s", cve_id)
                 continue
 
         if cve_object := parse_object(cve_obj):
@@ -158,6 +160,11 @@ def parse_object(cve_obj: Dict) -> Dict | None:
     parsed_cve_object = {"cve": cve_id}
 
     try:
+        vuln_status = cve_obj.get("vulnStatus")
+        if vuln_status is not None and vuln_status == CVE_REJECTED:
+            logger.warning("%s is Rejected", cve_id)
+            return None
+
         if configurations := cve_obj.get("configurations"):
             cpe_data = get_cpe_data(configurations)
             if not cpe_data:
@@ -170,11 +177,7 @@ def parse_object(cve_obj: Dict) -> Dict | None:
                     "source": cve_obj.get("sourceIdentifier"),
                     "published_date": parse_datetime(cve_obj.get("published")),
                     "modified_date": parse_datetime(cve_obj.get("lastModified")),
-                    "status": (
-                        cve_obj.get("vulnStatus").lower()
-                        if cve_obj.get("vulnStatus")
-                        else None
-                    ),
+                    "status": vuln_status,
                     "description": next(
                         obj["value"]
                         for obj in cve_obj.get("descriptions")
