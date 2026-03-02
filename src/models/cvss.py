@@ -17,7 +17,7 @@ class CVSSScore(Base):
         ForeignKey("cves.cve_id", ondelete="CASCADE"), nullable=False
     )
 
-    version: Mapped[str] = mapped_column(String(10), nullable=False)  # "2.0" or "3.1"
+    version: Mapped[str] = mapped_column(String(10), nullable=False)
 
     base_score: Mapped[Optional[float]] = mapped_column(index=True)
     base_severity: Mapped[Optional[str]] = mapped_column(String(20), index=True)
@@ -58,6 +58,10 @@ class CVSSv2(Base):
 
     score: Mapped["CVSSScore"] = relationship(back_populates="details_v2")
 
+    __table_args__ = (
+        UniqueConstraint("cvss_score_id", name="uq_cvss_v2_details_score"),
+    )
+
 
 class CVSSv31(Base):
     __tablename__ = "cvss_v31_details"
@@ -77,3 +81,7 @@ class CVSSv31(Base):
     availability_impact: Mapped[Optional[str_100]]
 
     score: Mapped["CVSSScore"] = relationship(back_populates="details_v31")
+
+    __table_args__ = (
+        UniqueConstraint("cvss_score_id", name="uq_cvss_v31_details_score"),
+    )
