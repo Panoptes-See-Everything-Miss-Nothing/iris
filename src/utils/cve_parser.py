@@ -10,13 +10,14 @@ from .cve_vectors import (
     PrivilegesRequired,
     AttackComplexity,
     IntegrityImpact,
-    ConfedentialityImpact,
+    ConfidentialityImpact,
     AccessComplexity,
     Authentication,
     Scope,
     AccessVector,
 )
 from src.crud.cve_lookup import get_existing_cve_ids, is_updated
+from src.utils.nvd_parser import parse_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -28,21 +29,21 @@ def create_version_dictionary(cvss_obj_list: List[Dict]) -> Dict:
 
     if cvss_data:
         result["baseScore"] = cvss_data.get("baseScore")
-        result["baseSeverity"] = BaseSeverity.from_raw(cvss_obj.get("baseSeverity"))
-        result["attackVector"] = AttackVector.from_raw(
-            AttackVector.from_raw(cvss_data.get("attackVector"))
+        result["baseSeverity"] = BaseSeverity.from_raw(
+            cvss_data.get("baseSeverity") or cvss_obj.get("baseSeverity")
         )
+        result["attackVector"] = AttackVector.from_raw(cvss_data.get("attackVector"))
         result["attackComplexity"] = AttackComplexity.from_raw(
             cvss_data.get("attackComplexity")
         )
         result["privilegesRequired"] = PrivilegesRequired.from_raw(
-            cvss_obj.get("privilegesRequired")
+            cvss_data.get("privilegesRequired") or cvss_obj.get("privilegesRequired")
         )
         result["userInteraction"] = UserInteraction.from_raw(
             cvss_data.get("userInteraction")
         )
         result["scope"] = Scope.from_raw(cvss_data.get("scope"))
-        result["confidentialityImpact"] = ConfedentialityImpact.from_raw(
+        result["confidentialityImpact"] = ConfidentialityImpact.from_raw(
             cvss_data.get("confidentialityImpact")
         )
         result["integrityImpact"] = IntegrityImpact.from_raw(
@@ -103,13 +104,16 @@ def parse_fixed_version(criteria) -> dict | None:
     fixed_version = None
     try:
         trimmed_criteria = re.sub("^cpe:\\d+.\\d+:|(:\\*)+", "", criteria)
-        if version := re.search(r"\d+(?:\.\d+)*(?=:)", criteria):
-            fixed_version = version.group()
 
         criteria_list = trimmed_criteria.split(":")
         category = criteria_list[0]
         vendor = criteria_list[1]
         package = criteria_list[2]
+
+        if len(criteria_list) > 3:
+            raw_ver = criteria_list[3]
+            if raw_ver and raw_ver not in ("*", "-"):
+                fixed_version = raw_ver
 
         return {
             "fixed_version": fixed_version,
@@ -140,7 +144,7 @@ def parse_data(data: Dict) -> list[Dict] | None:
             continue
 
         if cve_id in existing_cves:
-            if not is_updated(cve_obj):
+            if not is_updated(cve_obj, existing_cves):
                 logger.info("CVE already exists, skipping", extra={"cve_id": cve_id})
                 continue
 
@@ -164,8 +168,8 @@ def parse_object(cve_obj: Dict) -> Dict | None:
                 {
                     "cpe_nodes": cpe_data,
                     "source": cve_obj.get("sourceIdentifier"),
-                    "published_date": cve_obj.get("published"),
-                    "modified_date": cve_obj.get("lastModified"),
+                    "published_date": parse_datetime(cve_obj.get("published")),
+                    "modified_date": parse_datetime(cve_obj.get("lastModified")),
                     "status": (
                         cve_obj.get("vulnStatus").lower()
                         if cve_obj.get("vulnStatus")
@@ -178,16 +182,16 @@ def parse_object(cve_obj: Dict) -> Dict | None:
                     ),
                 }
             )
-            metrics = cve_obj.get("metrics")
-            if not metrics:
-                logger.error("CVE data not present", extra={"cve_id": cve_id})
-                return None
+            metrics = cve_obj.get("metrics", {})
+            if metrics:
+                if cvss_v2 := metrics.get("cvssMetricV2"):
+                    parsed_cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
 
-            if cvss_v2 := metrics.get("cvssMetricV2"):
-                parsed_cve_object["cvss_v2"] = create_version_dictionary(cvss_v2)
+                if cvss_v31 := metrics.get("cvssMetricV31"):
+                    parsed_cve_object["cvss_v31"] = create_version_dictionary(cvss_v31)
+            else:
+                logger.info("No CVSS metrics for %s", cve_id)
 
-            if cvss_v31 := metrics.get("cvssMetricV31"):
-                parsed_cve_object["cvss_v31"] = create_version_dictionary(cvss_v31)
             return parsed_cve_object
 
         logger.error("Could not find configuration information of %s", cve_id)
