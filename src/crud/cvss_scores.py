@@ -1,7 +1,6 @@
 import logging
 from typing import Dict
 
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -31,19 +30,8 @@ def _upsert_cvss_score(
             if col.name not in ("id", "cve_id", "version")
         },
     )
-    db.execute(stmt)
-
-    score = db.scalar(
-        select(CVSSScore).where(
-            CVSSScore.cve_id == cve_id, CVSSScore.version == version
-        )
-    )
-    if score is None:
-        logger.error(
-            "CVSSScore not found after upsert for %s version %s", cve_id, version
-        )
-        return None
-    return score.id
+    score_id = db.scalar(stmt.returning(CVSSScore.id))
+    return score_id
 
 
 def upsert_cvss_v2(cve_id: str, v2: Dict, db: Session) -> bool:

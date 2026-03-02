@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def get_or_create_vendor(vendor_name: Optional[str], db: Session) -> Optional[Vendor]:
     if not vendor_name:
         return None
-    vendor = db.query(Vendor).filter(Vendor.name == vendor_name).first()
+    vendor = db.scalar(select(Vendor).where(Vendor.name == vendor_name))
     if not vendor:
         vendor = Vendor(name=vendor_name)
         db.add(vendor)
@@ -52,15 +52,6 @@ def save_or_update_cves(cve_objects: List[Dict]) -> bool:
                     },
                 )
                 db.execute(stmt)
-
-                # Get CVE object
-                cve = db.scalar(select(CVE).where(CVE.cve_id == cve_id))
-                if not cve:
-                    logger.error(
-                        "Failed to retrieve CVE after upsert", extra={"cve_id": cve_id}
-                    )
-                    failed_cves.append(cve_id)
-                    continue
 
                 # Process package and version info
                 if not upsert_vulnerable_package_info(cve_id, item, db):
@@ -141,21 +132,14 @@ def upsert_vulnerable_package_info(cve: str, item: dict, db: Session) -> bool:
                     "cpe_string": stmt.excluded.cpe_string,
                 },
             )
-            db.execute(stmt)
-
-            pkg = db.scalar(
-                select(VulnerablePackage).where(
-                    VulnerablePackage.cve_id == cve,
-                    VulnerablePackage.cpe_string == pkg_entry.get("criteria"),
-                )
-            )
+            pkg_id = db.scalar(stmt.returning(VulnerablePackage.id))
 
             if not has_version_info(pkg_entry):
                 logger.info("No package version info", extra={"cve": cve})
                 continue
 
             # Add VulnerableVersion
-            if not save_package_version_info(pkg_entry, pkg, db):
+            if not save_package_version_info(pkg_entry, pkg_id, db):
                 logger.error("Failed to save package info", extra={"cve": cve})
                 return False
     return True
@@ -174,9 +158,9 @@ def has_version_info(pkg_entry):
     )
 
 
-def save_package_version_info(pkg_entry, pkg, db: Session) -> bool:
+def save_package_version_info(pkg_entry, pkg_id: int, db: Session) -> bool:
     stmt = insert(VulnerableVersion).values(
-        package_id=pkg.id,
+        package_id=pkg_id,
         fixed_version=pkg_entry.get("fixed_version"),
         including_version_start=pkg_entry.get("including_version_start"),
         excluding_version_end=pkg_entry.get("excluding_version_end"),
