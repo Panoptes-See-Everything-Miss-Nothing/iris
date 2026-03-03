@@ -4,7 +4,9 @@
 <p align="center">
   <a href="https://docs.python.org/3/"><img src="https://img.shields.io/badge/Python-3-blue.svg" alt="Python 3"></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-17-336791.svg?logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
-  <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows%2010%2B-0078d4.svg" alt="Platform"></a>
+  <a href="https://www.kernel.org/">
+  <img src="https://img.shields.io/badge/platform-Linux-000000?logo=linux&logoColor=white" alt="Platform">
+</a>
   <a href="#build"><img src="https://img.shields.io/badge/arch-x64%20%7C%20x86-green.svg" alt="Architecture"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-GPLv3-lightgrey.svg" alt="License"></a>
 </p>
