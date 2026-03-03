@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, Integer
-from sqlalchemy.orm import relationship
+from typing import List
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -7,12 +9,9 @@ from .base import Base
 class Vendor(Base):
     __tablename__ = "vendors"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=True)
-
-    packages = relationship(
-        "VulnerablePackage",
-        back_populates="vendor",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
     )
+
+    packages: Mapped[List["VulnerablePackage"]] = relationship(back_populates="vendor")

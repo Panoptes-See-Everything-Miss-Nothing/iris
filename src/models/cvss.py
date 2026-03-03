@@ -1,80 +1,87 @@
-from sqlalchemy import (
-    Column,
-    String,
-    Float,
-    ForeignKey,
-    Integer,
-    Boolean,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declared_attr
+from typing import Optional
 
-from .base import Base
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .base import Base, str_100, str_150
 
 
-class CVSSBase(Base):
-    __abstract__ = True
+class CVSSScore(Base):
+    """Single source of truth for CVSS scores (v2.0 and v3.1 only)."""
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    __tablename__ = "cvss_scores"
 
-    cve_id = Column(
-        String,
-        ForeignKey("cves.cve_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-        unique=True,
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    cve_id: Mapped[str] = mapped_column(
+        ForeignKey("cves.cve_id", ondelete="CASCADE"), nullable=False
     )
 
-    # Common to both v2 and v3
-    base_score = Column(Float, nullable=True)
-    base_severity = Column(String(20), nullable=True, index=True)
-    vector_string = Column(String(150), nullable=True)
-    exploitability_score = Column(Float, nullable=True)
-    impact_score = Column(Float, nullable=True)
+    version: Mapped[str] = mapped_column(String(10), nullable=False)
 
-    @declared_attr
-    def cve(cls):
-        return relationship(
-            "CVE",
-            back_populates="cvss_v2" if cls.__name__ == "CVSSv2" else "cvss_v3",
-            uselist=False,
-        )
+    base_score: Mapped[Optional[float]] = mapped_column(index=True)
+    base_severity: Mapped[Optional[str]] = mapped_column(String(20), index=True)
+    vector_string: Mapped[Optional[str_150]]
 
+    exploitability_score: Mapped[Optional[float]]
+    impact_score: Mapped[Optional[float]]
 
-class CVSSv2(CVSSBase):
-    __tablename__ = "cvss_v2"
+    cve: Mapped["CVE"] = relationship(back_populates="cvss_scores")
+    details_v2: Mapped[Optional["CVSSv2"]] = relationship(
+        back_populates="score", cascade="all, delete-orphan"
+    )
+    details_v31: Mapped[Optional["CVSSv31"]] = relationship(
+        back_populates="score", cascade="all, delete-orphan"
+    )
 
-    access_vector = Column(String(30), nullable=True)
-    access_complexity = Column(String(30), nullable=True)
-    authentication = Column(String(30), nullable=True)
-    confidentiality_impact = Column(String(30), nullable=True)
-    integrity_impact = Column(String(30), nullable=True)
-    availability_impact = Column(String(30), nullable=True)
-
-    ac_insuf_info = Column(Boolean, nullable=True)
-    obtain_all_privilege = Column(Boolean, nullable=True)
-    obtain_user_privilege = Column(Boolean, nullable=True)
-    obtain_other_privilege = Column(Boolean, nullable=True)
-    user_interaction_required = Column(Boolean, nullable=True)
-
-    __table_args__ = (UniqueConstraint("cve_id", name="uq_cvss_v2_cve"),)
+    __table_args__ = (
+        UniqueConstraint("cve_id", "version", name="uq_cvss_cve_version"),
+        Index("ix_cvss_cve_version", "cve_id", "version"),
+        Index("ix_cvss_score_severity", "base_score", "base_severity"),
+    )
 
 
-class CVSSv31(CVSSBase):
-    __tablename__ = "cvss_v31"
+class CVSSv2(Base):
+    __tablename__ = "cvss_v2_details"
 
-    attack_vector = Column(String(30), nullable=True)
-    attack_complexity = Column(String(30), nullable=True)
-    privileges_required = Column(String(30), nullable=True)
-    user_interaction = Column(String(30), nullable=True)
-    scope = Column(String(20), nullable=True)
-    confidentiality_impact = Column(String(30), nullable=True)
-    integrity_impact = Column(String(30), nullable=True)
-    availability_impact = Column(String(30), nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    cvss_score_id: Mapped[int] = mapped_column(
+        ForeignKey("cvss_scores.id", ondelete="CASCADE"), nullable=False
+    )
 
-    __table_args__ = (UniqueConstraint("cve_id", name="uq_cvss_v31_cve"),)
+    access_vector: Mapped[Optional[str_100]]
+    access_complexity: Mapped[Optional[str_100]]
+    authentication: Mapped[Optional[str_100]]
+    confidentiality_impact: Mapped[Optional[str_100]]
+    integrity_impact: Mapped[Optional[str_100]]
+    availability_impact: Mapped[Optional[str_100]]
+
+    score: Mapped["CVSSScore"] = relationship(back_populates="details_v2")
+
+    __table_args__ = (
+        UniqueConstraint("cvss_score_id", name="uq_cvss_v2_details_score"),
+    )
 
 
-# TODO CVSS_v30
-# TODO CVSS_v4
+class CVSSv31(Base):
+    __tablename__ = "cvss_v31_details"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    cvss_score_id: Mapped[int] = mapped_column(
+        ForeignKey("cvss_scores.id", ondelete="CASCADE"), nullable=False
+    )
+
+    attack_vector: Mapped[Optional[str_100]]
+    attack_complexity: Mapped[Optional[str_100]]
+    privileges_required: Mapped[Optional[str_100]]
+    user_interaction: Mapped[Optional[str_100]]
+    scope: Mapped[Optional[str]] = mapped_column(String(20))
+    confidentiality_impact: Mapped[Optional[str_100]]
+    integrity_impact: Mapped[Optional[str_100]]
+    availability_impact: Mapped[Optional[str_100]]
+
+    score: Mapped["CVSSScore"] = relationship(back_populates="details_v31")
+
+    __table_args__ = (
+        UniqueConstraint("cvss_score_id", name="uq_cvss_v31_details_score"),
+    )

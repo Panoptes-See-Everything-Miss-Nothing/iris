@@ -17,8 +17,6 @@ def process_data(cve_objects: list[dict[str, Any]]):
 
     if result:
         logger.info("Save successful")
-    elif result is None:
-        logger.info("No data present")
     else:
         logger.error("Failed to save CVE objects")
 
