@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 JSON_FEED_ROOT_URL = "https://nvd.nist.gov/feeds/json/cve/2.0"
 
 FIXTURES_DIR = PROJECT_ROOT / "src/fixtures"
+os.makedirs(FIXTURES_DIR, exist_ok=True)
 DATABASE_URL = URL.create(
     drivername="postgresql",
     username=DB_USERNAME,
