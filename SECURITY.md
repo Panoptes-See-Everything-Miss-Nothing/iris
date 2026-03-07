@@ -10,6 +10,6 @@ Tne following versions are supported.
 
 ## Reporting a Vulnerability
 
-For vulnerabilities, security misconfigurations, or sensitive disclosures, please submit a private issue (feature coming soon) or contact Kapil Khot directly on[Twitter](https://x.com/kapil_khot).
+For vulnerabilities, security misconfigurations, or sensitive disclosures, please submit a private issue (feature coming soon) or contact Vaibhav Kakade directly on[Twitter](https://x.com/vk_appledore).
 
 We take responsible disclosure seriously and will ensure proper acknowledgment and credit for all valid findings.

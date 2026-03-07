@@ -143,7 +143,8 @@ vendors (1) ────────────── (N) vulnerable_packages
 ## Pre-requisites
 
 - Windows 10+ with WSL2, or Linux
-- Docker and Docker Compose
+- Docker
+- Docker Compose
 - Python 3.10+
 - An [NVD API key](https://nvd.nist.gov/developers/request-an-api-key) (optional but recommended to avoid rate limits)
 
@@ -198,7 +199,7 @@ Use the provided `Makefile`. Start with `make init` for first-time setup (create
 
 ---
 
-## Optional: direnv
+## direnv
 
 [direnv](https://direnv.net/) can automatically load your `.env` when you enter the project directory.
 
@@ -228,6 +229,7 @@ direnv allow
 | `black` | Code formatter |
 | `pre-commit` | Git hook runner |
 | `alembic` | Database migrations |
+| `PostgreSQL` | Relational database (Dockerized) |
 
 Install black:
 

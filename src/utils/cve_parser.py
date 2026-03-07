@@ -105,7 +105,7 @@ def parse_fixed_version(criteria) -> dict | None:
     # package has fixed version in criteria
     fixed_version = None
     try:
-        trimmed_criteria = re.sub("^cpe:\\d+.\\d+:|(:\\*)+", "", criteria)
+        trimmed_criteria = re.sub("^cpe:\\d+\\.\\d+:|(:\\*)+", "", criteria)
 
         criteria_list = trimmed_criteria.split(":")
         category = criteria_list[0]
@@ -140,7 +140,7 @@ def parse_data(data: Dict) -> list[Dict] | None:
     nvd_data = []
     for _ in data.get("vulnerabilities", []):
         cve_obj = _.get("cve")
-        cve_id = cve_obj.get("id")
+        cve_id = re.sub(r"[\x00-\x1f\x7f]", "", cve_obj.get("id") or "")
         if not cve_id:
             logger.info("CVE not found. Skipping object")
             continue
@@ -156,7 +156,7 @@ def parse_data(data: Dict) -> list[Dict] | None:
 
 
 def parse_object(cve_obj: Dict) -> Dict | None:
-    cve_id = cve_obj.get("id")
+    cve_id = re.sub(r"[\x00-\x1f\x7f]", "", cve_obj.get("id") or "")
     parsed_cve_object = {"cve": cve_id}
 
     try:
@@ -171,6 +171,17 @@ def parse_object(cve_obj: Dict) -> Dict | None:
                 logger.error("Failed to fetch CPE data for", extra={"cve_id": cve_id})
                 return None
 
+            description = next(
+                (
+                    obj["value"]
+                    for obj in cve_obj.get("descriptions", [])
+                    if obj["lang"] == "en"
+                ),
+                None,
+            )
+            if description is None:
+                logger.warning("No English description found for %s", cve_id)
+
             parsed_cve_object.update(
                 {
                     "cpe_nodes": cpe_data,
@@ -178,11 +189,7 @@ def parse_object(cve_obj: Dict) -> Dict | None:
                     "published_date": parse_datetime(cve_obj.get("published")),
                     "modified_date": parse_datetime(cve_obj.get("lastModified")),
                     "status": vuln_status,
-                    "description": next(
-                        obj["value"]
-                        for obj in cve_obj.get("descriptions")
-                        if obj["lang"] == "en"
-                    ),
+                    "description": description,
                 }
             )
             metrics = cve_obj.get("metrics", {})
