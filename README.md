@@ -4,7 +4,9 @@
 <p align="center">
   <a href="https://docs.python.org/3/"><img src="https://img.shields.io/badge/Python-3-blue.svg" alt="Python 3"></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-17-336791.svg?logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
-  <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows%2010%2B-0078d4.svg" alt="Platform"></a>
+  <a href="https://www.kernel.org/">
+  <img src="https://img.shields.io/badge/platform-Linux-000000?logo=linux&logoColor=white" alt="Platform">
+</a>
   <a href="#build"><img src="https://img.shields.io/badge/arch-x64%20%7C%20x86-green.svg" alt="Architecture"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-GPLv3-lightgrey.svg" alt="License"></a>
 </p>
@@ -141,7 +143,8 @@ vendors (1) ────────────── (N) vulnerable_packages
 ## Pre-requisites
 
 - Windows 10+ with WSL2, or Linux
-- Docker and Docker Compose
+- Docker
+- Docker Compose
 - Python 3.10+
 - An [NVD API key](https://nvd.nist.gov/developers/request-an-api-key) (optional but recommended to avoid rate limits)
 
@@ -196,7 +199,7 @@ Use the provided `Makefile`. Start with `make init` for first-time setup (create
 
 ---
 
-## Optional: direnv
+## direnv
 
 [direnv](https://direnv.net/) can automatically load your `.env` when you enter the project directory.
 
@@ -226,6 +229,7 @@ direnv allow
 | `black` | Code formatter |
 | `pre-commit` | Git hook runner |
 | `alembic` | Database migrations |
+| `PostgreSQL` | Relational database (Dockerized) |
 
 Install black:
 

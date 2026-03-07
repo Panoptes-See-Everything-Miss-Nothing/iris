@@ -11,7 +11,28 @@ services:
     volumes:
       - cve_pg_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  iris:
+    build: .
+    container_name: iris
+    env_file: .env
+    environment:
+      DB_HOST: postgres   # override .env — containers resolve each other by service name
+    volumes:
+      - iris_fixtures:/app/src/fixtures
+      - ./logs:/app/logs          # bind mount — logs visible directly on host
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   cve_pg_data:
     name: cve_pg_data
+  iris_fixtures:
+    name: iris_fixtures
