@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.ruff_cache/
+.git/
+.github/
+.pre-commit-config.yaml
+
+# Runtime output — mounted as volumes in compose
+src/fixtures/
+logs/
+
+# Local secrets — injected via env_file in compose, never baked into image
+.env

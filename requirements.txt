@@ -10,7 +10,7 @@ black==25.11.0
 cfgv==3.5.0
 click==8.3.1
 distlib==0.4.0
-filelock==3.20.0
+filelock==3.20.3
 identify==2.6.15
 mypy_extensions==1.1.0
 nodeenv==1.9.1
@@ -20,4 +20,4 @@ platformdirs==4.5.1
 pre_commit==4.5.0
 pytokens==0.3.0
 PyYAML==6.0.3
-virtualenv==20.35.4
+virtualenv==20.36.1

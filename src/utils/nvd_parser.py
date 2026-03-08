@@ -6,7 +6,12 @@ from math import ceil
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from src.settings import CVE_URL, NVD_API_KEY
+from src.settings import (
+    CVE_URL,
+    NVD_API_KEY,
+    MAX_NVD_TOTAL_RESULTS,
+    MAX_CONCURRENT_API_PAGES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +38,19 @@ def write_to_json(nvd_data, file_path) -> str | None:
         logger.exception("Could not write to %s", file_path)
 
 
-async def fetch_page(session: aiohttp.ClientSession, params: Dict, page: int) -> List:
+async def fetch_page(
+    session: aiohttp.ClientSession,
+    params: Dict,
+    page: int,
+    semaphore: asyncio.Semaphore,
+) -> List:
     retries = 5
     backoff = 2
     for attempt in range(retries):
+        wait = backoff**attempt
         try:
-            async with session.get(CVE_URL, params=params) as response:
+            async with semaphore, session.get(CVE_URL, params=params) as response:
                 if response.status == 429:
-                    wait = backoff**attempt
                     await asyncio.sleep(wait)
                     continue
 
@@ -49,19 +59,35 @@ async def fetch_page(session: aiohttp.ClientSession, params: Dict, page: int) ->
                 return data.get("vulnerabilities", [])
 
         except asyncio.TimeoutError:
-            logger.error("Timeout fetching page %s, giving up on this page", page)
-            return []
+            logger.warning(
+                "Timeout on page %s (attempt %s/%s), retrying",
+                page,
+                attempt + 1,
+                retries,
+            )
         except aiohttp.ClientError:
-            logger.exception("Error occured for page", extra={"page": page})
-            return []
-    logger.error("Failed after multiple retries", extra={"page": page})
+            logger.warning(
+                "Client error on page %s (attempt %s/%s), retrying",
+                page,
+                attempt + 1,
+                retries,
+                exc_info=True,
+            )
+
+        await asyncio.sleep(wait)
+
+    logger.error(
+        "Failed page %s after %s retries — page will be missing", page, retries
+    )
     return []
 
 
 async def read_from_nvd_api() -> Dict | None:
     logger.info("Reading from API %s", CVE_URL)
     page_size = 2000
-    header = {"apiKey": NVD_API_KEY}
+    header: dict[str, str] = {}
+    if NVD_API_KEY:
+        header["apiKey"] = NVD_API_KEY
 
     timeout = aiohttp.ClientTimeout(total=30, connect=10)
     async with aiohttp.ClientSession(headers=header, timeout=timeout) as session:
@@ -84,18 +110,27 @@ async def read_from_nvd_api() -> Dict | None:
         if not total_results:
             return {"vulnerabilities": []}
 
+        if total_results > MAX_NVD_TOTAL_RESULTS:
+            logger.error(
+                "API reported %s results, exceeding sanity cap of %s — aborting",
+                total_results,
+                MAX_NVD_TOTAL_RESULTS,
+            )
+            return None
+
         vulnerabilities = []
         vulnerabilities.extend(data.get("vulnerabilities", []))
 
         page_count = ceil(total_results / page_size)
         logger.info("Total pages %s", page_count)
 
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_API_PAGES)
         tasks = []  # prepare concurrent tasks for remaining pages
         for page in range(1, page_count):
             logger.info("Fetching from page %s/%s", page, page_count)
             params = {"resultsPerPage": page_size, "startIndex": page * page_size}
 
-            tasks.append(fetch_page(session, params, page))
+            tasks.append(fetch_page(session, params, page, semaphore))
 
         if tasks:
             results = await asyncio.gather(*tasks)

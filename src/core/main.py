@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from typing import Any
 
 from src.utils.nvd_parser import read_from_json, read_from_nvd_api
@@ -10,6 +11,8 @@ from src.logger_config import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+_RUN_INTERVAL_HOURS = int(os.getenv("RUN_INTERVAL_HOURS", "2"))
 
 
 def process_data(cve_objects: list[dict[str, Any]]):
@@ -64,11 +67,16 @@ async def run_api_feed() -> None:
 
 
 async def main() -> None:
-    run_json_feed()
-    await run_api_feed()
+    while True:
+        logger.info("Pipeline run starting")
+        run_json_feed()
+        await run_api_feed()
+        logger.info(
+            "Pipeline run complete. Next run in %s hour(s)", _RUN_INTERVAL_HOURS
+        )
+        await asyncio.sleep(_RUN_INTERVAL_HOURS * 3600)
 
 
 if __name__ == "__main__":
     logger.info("Execution started")
     asyncio.run(main())
-    logger.info("Execution Stopped")
