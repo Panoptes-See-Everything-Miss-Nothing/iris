@@ -6,7 +6,7 @@ requests==2.32.5
 SQLAlchemy==2.0.45
 
 # Dev / formatting tools
-black==25.11.0
+black==26.3.1
 cfgv==3.5.0
 click==8.3.1
 distlib==0.4.0
