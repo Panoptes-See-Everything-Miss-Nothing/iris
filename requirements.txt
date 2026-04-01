@@ -1,5 +1,5 @@
 # Runtime dependencies
-aiohttp==3.13.3
+aiohttp==3.13.4
 alembic==1.17.2
 psycopg2-binary==2.9.11
 requests==2.32.5
